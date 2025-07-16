@@ -136,16 +136,7 @@
 <script setup>
 const { theme, setTheme } = useTheme()
 const { background, backgrounds, setBackground } = useBackground()
-
-const settings = ref({
-  theme: theme.value,
-  background: background.value,
-  dockPosition: 'bottom',
-  showClock: true,
-  dockMagnification: true,
-  notifications: true,
-  soundEffects: false
-})
+const { settings, saveSettings: saveGlobalSettings, resetSettings: resetGlobalSettings } = useSettings()
 
 // Watch for theme changes and update settings
 watch(theme, (newTheme) => {
@@ -169,37 +160,19 @@ watch(() => settings.value.background, (newBackground) => {
 
 // Load saved settings on mount
 onMounted(() => {
-  const savedSettings = localStorage.getItem('dxos-settings')
-  if (savedSettings) {
-    try {
-      const parsedSettings = JSON.parse(savedSettings)
-      settings.value = { ...settings.value, ...parsedSettings }
-      // Ensure theme and background are applied
-      setTheme(settings.value.theme)
-      setBackground(settings.value.background)
-    } catch (e) {
-      console.error('Failed to load saved settings:', e)
-    }
-  }
+  // Ensure theme and background are applied from global settings
+  setTheme(settings.value.theme)
+  setBackground(settings.value.background)
 })
 
 function saveSettings() {
-  // Save settings to localStorage
-  localStorage.setItem('dxos-settings', JSON.stringify(settings.value))
+  saveGlobalSettings()
   console.log('Settings saved:', settings.value)
   alert('Settings saved successfully!')
 }
 
 function resetSettings() {
-  settings.value = {
-    theme: 'auto',
-    background: 'gradient-1',
-    dockPosition: 'bottom',
-    showClock: true,
-    dockMagnification: true,
-    notifications: true,
-    soundEffects: false
-  }
+  resetGlobalSettings()
   // Reset theme and background to defaults
   setTheme('auto')
   setBackground('gradient-1')

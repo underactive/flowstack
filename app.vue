@@ -42,6 +42,7 @@
             v-for="(item, index) in dockItems" 
             :key="index"
             class="dock-item"
+            :class="{ 'magnification-enabled': settings.dockMagnification }"
             @click="navigateToPage(item.route)"
           >
             <div class="dock-icon">
@@ -61,6 +62,7 @@
               v-for="window in minimizedWindows" 
               :key="window.id"
               class="dock-item minimized-window"
+              :class="{ 'magnification-enabled': settings.dockMagnification }"
               @click="restoreWindow(window.id)"
             >
               <div class="dock-icon">
@@ -80,7 +82,7 @@ const currentTime = ref('')
 const windowManager = useWindowManager()
 const { openWindow, windows, restoreWindow } = windowManager
 const { currentBackground } = useBackground()
-
+const { settings } = useSettings()
 
 // Get minimized windows
 const minimizedWindows = computed(() => 
@@ -332,8 +334,12 @@ function navigateToPage(route) {
 }
 
 .dock-item:hover {
-  transform: scale(1.1);
-  background: rgba(255, 255, 255, 0.1);
+  /* Background overlay removed */
+}
+
+/* Apply magnification only when setting is enabled */
+.dock-item.magnification-enabled:hover {
+  transform: scale(1.5);
 }
 
 .minimized-window {
