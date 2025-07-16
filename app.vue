@@ -28,8 +28,11 @@
 
     <!-- Desktop Content -->
     <div class="desktop-content">
-      <NuxtPage />
+      <WindowManager />
     </div>
+
+    <!-- Taskbar -->
+    <WindowTaskbar />
 
     <!-- Dock -->
     <div class="dock">
@@ -52,11 +55,21 @@
 
 <script setup>
 const currentTime = ref('')
+const windowManager = useWindowManager()
+const { openWindow } = windowManager
 
 // Update time every second
 onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
+  
+  // Open home window by default
+  openWindow('/', 'Welcome to DXOS', {
+    x: 150,
+    y: 100,
+    width: 900,
+    height: 700
+  })
 })
 
 function updateTime() {
@@ -77,7 +90,23 @@ const dockItems = [
 ]
 
 function navigateToPage(route) {
-  navigateTo(route)
+  const windowTitles = {
+    '/': 'Welcome to DXOS',
+    '/about': 'About DXOS',
+    '/contact': 'Contact Us',
+    '/projects': 'Projects',
+    '/settings': 'Settings'
+  }
+  
+  const windowSizes = {
+    '/': { width: 900, height: 700, x: 150, y: 100 },
+    '/about': { width: 1000, height: 800, x: 200, y: 150 },
+    '/contact': { width: 1200, height: 900, x: 250, y: 200 },
+    '/projects': { width: 1200, height: 900, x: 300, y: 250 },
+    '/settings': { width: 900, height: 800, x: 350, y: 300 }
+  }
+  
+  openWindow(route, windowTitles[route], windowSizes[route])
 }
 </script>
 

@@ -1,35 +1,27 @@
 <template>
-  <WindowTitleBar 
-    title="Welcome to DXOS"
-    :width="900"
-    :height="700"
-    :initial-x="150"
-    :initial-y="100"
-  >
-    <div class="home-page">
-      <div class="welcome-card">
-        <h1>Welcome to DXOS</h1>
-        <p>Your macOS-style desktop experience</p>
-        <div class="feature-grid">
-          <div class="feature-item">
-            <UIcon name="i-heroicons-rocket-launch" class="feature-icon" />
-            <h3>Fast & Modern</h3>
-            <p>Built with Nuxt 3 and Vue 3</p>
-          </div>
-          <div class="feature-item">
-            <UIcon name="i-heroicons-device-phone-mobile" class="feature-icon" />
-            <h3>Responsive</h3>
-            <p>Works on all devices</p>
-          </div>
-          <div class="feature-item">
-            <UIcon name="i-heroicons-paint-brush" class="feature-icon" />
-            <h3>Beautiful UI</h3>
-            <p>macOS-inspired design</p>
-          </div>
+  <div class="home-page">
+    <div class="welcome-card">
+      <h1>Welcome to DXOS</h1>
+      <p>Your macOS-style desktop experience</p>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <UIcon name="i-heroicons-rocket-launch" class="feature-icon" />
+          <h3>Fast & Modern</h3>
+          <p>Built with Nuxt 3 and Vue 3</p>
+        </div>
+        <div class="feature-item">
+          <UIcon name="i-heroicons-device-phone-mobile" class="feature-icon" />
+          <h3>Responsive</h3>
+          <p>Works on all devices</p>
+        </div>
+        <div class="feature-item">
+          <UIcon name="i-heroicons-paint-brush" class="feature-icon" />
+          <h3>Beautiful UI</h3>
+          <p>macOS-inspired design</p>
         </div>
       </div>
     </div>
-  </WindowTitleBar>
+  </div>
 </template>
 
 <style scoped>

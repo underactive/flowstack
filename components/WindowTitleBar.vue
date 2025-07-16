@@ -1,30 +1,31 @@
 <template>
   <div 
+    v-if="windowState && windowState.isVisible && !windowState.isMinimized"
     class="window-container"
+    :class="{ 'maximized': windowState.isMaximized, 'dragging': isDragging }"
     :style="{ 
-      left: position.x + 'px', 
-      top: position.y + 'px',
-      width: width + 'px',
-      height: height + 'px'
+      transform: windowState.isMaximized ? 'none' : `translate(${windowState.x}px, ${windowState.y}px)`,
+      width: windowState.isMaximized ? '100vw' : windowState.width + 'px',
+      height: windowState.isMaximized ? 'calc(100vh - 104px)' : windowState.height + 'px',
+      zIndex: windowState.zIndex
     }"
   >
     <div 
       class="title-bar"
       @mousedown="startDrag"
-      @touchstart="startDrag"
     >
       <div class="title-bar-left">
         <div class="window-icon">
           <UIcon name="i-heroicons-window" class="icon" />
         </div>
-        <span class="window-title">{{ title }}</span>
+        <span class="window-title">{{ windowState.title }}</span>
       </div>
       <div class="title-bar-right">
         <button class="title-bar-btn minimize" @click="minimize">
           <UIcon name="i-heroicons-minus" class="btn-icon" />
         </button>
         <button class="title-bar-btn maximize" @click="maximize">
-          <UIcon name="i-heroicons-arrows-pointing-out" class="btn-icon" />
+          <UIcon :name="windowState.isMaximized ? 'i-heroicons-arrows-pointing-in' : 'i-heroicons-arrows-pointing-out'" class="btn-icon" />
         </button>
         <button class="title-bar-btn close" @click="close">
           <UIcon name="i-heroicons-x-mark" class="btn-icon" />
@@ -39,51 +40,64 @@
 
 <script setup>
 const props = defineProps({
-  title: {
-    type: String,
-    default: 'Window'
-  },
-  width: {
-    type: Number,
-    default: 800
-  },
-  height: {
-    type: Number,
-    default: 600
-  },
-  initialX: {
-    type: Number,
-    default: 100
-  },
-  initialY: {
-    type: Number,
-    default: 100
+  windowState: {
+    type: Object,
+    required: true
   }
 })
 
-const emit = defineEmits(['close', 'minimize', 'maximize'])
-
-const position = ref({
-  x: props.initialX,
-  y: props.initialY
-})
+const { minimizeWindow, maximizeWindow, closeWindow, bringToFront, updateWindowPosition } = useWindowManager()
 
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
+const dragStartPos = ref({ x: 0, y: 0 })
+
+// Throttle function for performance
+function throttle(func, limit) {
+  let inThrottle
+  return (...args) => {
+    if (!inThrottle) {
+      func(...args)
+      inThrottle = true
+      setTimeout(() => inThrottle = false, limit)
+    }
+  }
+}
+
+// Throttled update function
+const throttledUpdatePosition = throttle((x, y) => {
+  updateWindowPosition(props.windowState.id, x, y)
+}, 16) // ~60fps
 
 function startDrag(event) {
-  isDragging.value = true
+  if (props.windowState.isMaximized) return
   
-  const rect = event.target.closest('.window-container').getBoundingClientRect()
+  event.preventDefault()
+  event.stopPropagation()
+  
+  isDragging.value = true
+  bringToFront(props.windowState.id)
+  
+  // Store initial position
+  dragStartPos.value = {
+    x: props.windowState.x,
+    y: props.windowState.y
+  }
+  
+  // Calculate offset from mouse to window corner
+  const rect = event.currentTarget.getBoundingClientRect()
   dragOffset.value = {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top
   }
   
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
-  document.addEventListener('touchmove', onDrag, { passive: false })
-  document.addEventListener('touchend', stopDrag)
+  // Use passive listeners for better performance
+  document.addEventListener('mousemove', onDrag, { passive: false })
+  document.addEventListener('mouseup', stopDrag, { passive: true })
+  
+  // Prevent text selection during drag
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'grabbing'
 }
 
 function onDrag(event) {
@@ -91,51 +105,70 @@ function onDrag(event) {
   
   event.preventDefault()
   
-  const clientX = event.clientX || (event.touches && event.touches[0].clientX)
-  const clientY = event.clientY || (event.touches && event.touches[0].clientY)
+  const newX = event.clientX - dragOffset.value.x
+  const newY = event.clientY - dragOffset.value.y
   
-  if (clientX && clientY) {
-    position.value = {
-      x: clientX - dragOffset.value.x,
-      y: clientY - dragOffset.value.y
-    }
-  }
+  // Keep window within viewport bounds
+  const maxX = window.innerWidth - props.windowState.width
+  const maxY = window.innerHeight - props.windowState.height
+  
+  const clampedX = Math.max(0, Math.min(newX, maxX))
+  const clampedY = Math.max(24, Math.min(newY, maxY)) // Account for menu bar
+  
+  // Use throttled update for smooth performance
+  throttledUpdatePosition(clampedX, clampedY)
 }
 
 function stopDrag() {
   isDragging.value = false
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
-  document.removeEventListener('touchmove', onDrag)
-  document.removeEventListener('touchend', stopDrag)
+  
+  // Restore cursor and selection
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
 }
 
 function close() {
-  emit('close')
+  closeWindow(props.windowState.id)
 }
 
 function minimize() {
-  emit('minimize')
+  minimizeWindow(props.windowState.id)
 }
 
 function maximize() {
-  emit('maximize')
+  maximizeWindow(props.windowState.id)
 }
 </script>
 
 <style scoped>
 .window-container {
   position: fixed;
+  left: 0;
+  top: 0;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  z-index: 1000;
   resize: both;
   min-width: 400px;
   min-height: 300px;
+  transition: all 0.3s ease;
+  will-change: transform;
+}
+
+.window-container.maximized {
+  border-radius: 0;
+  resize: none;
+  transform: none !important;
+}
+
+.window-container.dragging {
+  transition: none;
+  cursor: grabbing;
 }
 
 .title-bar {
@@ -146,9 +179,13 @@ function maximize() {
   backdrop-filter: blur(10px);
   padding: 8px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: move;
+  cursor: grab;
   user-select: none;
   height: 40px;
+}
+
+.title-bar:active {
+  cursor: grabbing;
 }
 
 .title-bar-left {
@@ -243,7 +280,7 @@ function maximize() {
 }
 
 /* Resize handle */
-.window-container::after {
+.window-container:not(.maximized)::after {
   content: '';
   position: absolute;
   bottom: 0;

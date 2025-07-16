@@ -1,41 +1,33 @@
 <template>
-  <WindowTitleBar 
-    title="Projects"
-    :width="1200"
-    :height="900"
-    :initial-x="300"
-    :initial-y="250"
-  >
-    <div class="projects-page">
-      <div class="projects-container">
-        <h1>Projects</h1>
-        <p class="subtitle">Explore our latest work and innovations</p>
-        
-        <div class="projects-grid">
-          <div 
-            v-for="(project, index) in projects" 
-            :key="index"
-            class="project-card"
-          >
-            <div class="project-icon">
-              <UIcon :name="project.icon" class="icon" />
-            </div>
-            <h3>{{ project.title }}</h3>
-            <p>{{ project.description }}</p>
-            <div class="project-tags">
-              <span 
-                v-for="tag in project.tags" 
-                :key="tag"
-                class="tag"
-              >
-                {{ tag }}
-              </span>
-            </div>
+  <div class="projects-page">
+    <div class="projects-container">
+      <h1>Projects</h1>
+      <p class="subtitle">Explore our latest work and innovations</p>
+      
+      <div class="projects-grid">
+        <div 
+          v-for="(project, index) in projects" 
+          :key="index"
+          class="project-card"
+        >
+          <div class="project-icon">
+            <UIcon :name="project.icon" class="icon" />
+          </div>
+          <h3>{{ project.title }}</h3>
+          <p>{{ project.description }}</p>
+          <div class="project-tags">
+            <span 
+              v-for="tag in project.tags" 
+              :key="tag"
+              class="tag"
+            >
+              {{ tag }}
+            </span>
           </div>
         </div>
       </div>
     </div>
-  </WindowTitleBar>
+  </div>
 </template>
 
 <script setup>
