@@ -18,4 +18,32 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+/* Theme CSS Custom Properties */
+:root {
+  /* Default light theme */
+  --text-primary: #1d1d1f;
+  --text-secondary: rgba(29, 29, 31, 0.8);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme */
+.theme-dark {
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+/* Light theme */
+.theme-light {
+  --text-primary: #1d1d1f;
+  --text-secondary: rgba(29, 29, 31, 0.8);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.1);
 } 

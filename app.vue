@@ -172,6 +172,12 @@ function navigateToPage(route) {
   font-size: 13px;
   font-weight: 500;
   z-index: 1000;
+  transition: background-color 0.3s ease;
+}
+
+.theme-light .menu-bar {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1d1d1f;
 }
 
 .menu-left {
@@ -189,6 +195,11 @@ function navigateToPage(route) {
   width: 16px;
   height: 16px;
   color: white;
+  transition: color 0.3s ease;
+}
+
+.theme-light .apple-logo {
+  color: #1d1d1f;
 }
 
 .menu-items {
@@ -220,6 +231,11 @@ function navigateToPage(route) {
   width: 16px;
   height: 16px;
   color: white;
+  transition: color 0.3s ease;
+}
+
+.theme-light .status-icon {
+  color: #1d1d1f;
 }
 
 .clock {
@@ -255,6 +271,12 @@ function navigateToPage(route) {
   gap: 8px;
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-light .dock-container {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .dock-section {
@@ -346,5 +368,11 @@ function navigateToPage(route) {
   text-align: center;
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.theme-light .dock-label {
+  color: #1d1d1f;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 </style>

@@ -134,14 +134,41 @@
 </template>
 
 <script setup>
+const { theme, setTheme } = useTheme()
+
 const settings = ref({
-  theme: 'auto',
+  theme: theme.value,
   background: 'gradient-1',
   dockPosition: 'bottom',
   showClock: true,
   dockMagnification: true,
   notifications: true,
   soundEffects: false
+})
+
+// Watch for theme changes and update settings
+watch(theme, (newTheme) => {
+  settings.value.theme = newTheme
+})
+
+// Watch for settings theme changes and update theme
+watch(() => settings.value.theme, (newTheme) => {
+  setTheme(newTheme)
+})
+
+// Load saved settings on mount
+onMounted(() => {
+  const savedSettings = localStorage.getItem('dxos-settings')
+  if (savedSettings) {
+    try {
+      const parsedSettings = JSON.parse(savedSettings)
+      settings.value = { ...settings.value, ...parsedSettings }
+      // Ensure theme is applied
+      setTheme(settings.value.theme)
+    } catch (e) {
+      console.error('Failed to load saved settings:', e)
+    }
+  }
 })
 
 const backgrounds = [
@@ -154,7 +181,8 @@ const backgrounds = [
 ]
 
 function saveSettings() {
-  // Here you would typically save settings to localStorage or backend
+  // Save settings to localStorage
+  localStorage.setItem('dxos-settings', JSON.stringify(settings.value))
   console.log('Settings saved:', settings.value)
   alert('Settings saved successfully!')
 }
@@ -169,6 +197,8 @@ function resetSettings() {
     notifications: true,
     soundEffects: false
   }
+  // Reset theme to auto
+  setTheme('auto')
   alert('Settings reset to defaults!')
 }
 </script>
@@ -194,6 +224,12 @@ function resetSettings() {
   margin-bottom: 10px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   text-align: center;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.theme-light .settings-container h1 {
+  color: #1d1d1f;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.3);
 }
 
 .subtitle {
@@ -201,6 +237,11 @@ function resetSettings() {
   font-size: 1.2rem;
   margin-bottom: 40px;
   text-align: center;
+  transition: color 0.3s ease;
+}
+
+.theme-light .subtitle {
+  color: rgba(29, 29, 31, 0.8);
 }
 
 .settings-content {
@@ -215,6 +256,12 @@ function resetSettings() {
   border-radius: 16px;
   padding: 24px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-light .settings-section {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .settings-section h2 {
@@ -223,6 +270,12 @@ function resetSettings() {
   font-weight: 600;
   margin-bottom: 20px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.theme-light .settings-section h2 {
+  color: #1d1d1f;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .setting-item {
@@ -231,6 +284,11 @@ function resetSettings() {
   align-items: center;
   padding: 16px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: border-color 0.3s ease;
+}
+
+.theme-light .setting-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .setting-item:last-child {
@@ -242,12 +300,22 @@ function resetSettings() {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.theme-light .setting-info h3 {
+  color: #1d1d1f;
 }
 
 .setting-info p {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.9rem;
   margin: 0;
+  transition: color 0.3s ease;
+}
+
+.theme-light .setting-info p {
+  color: rgba(29, 29, 31, 0.7);
 }
 
 .select-input {
@@ -257,11 +325,23 @@ function resetSettings() {
   padding: 8px 12px;
   color: white;
   font-size: 0.9rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-light .select-input {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #1d1d1f;
 }
 
 .select-input option {
   background: #333;
   color: white;
+}
+
+.theme-light .select-input option {
+  background: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .checkbox-input {

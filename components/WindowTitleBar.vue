@@ -309,6 +309,12 @@ function toggleMaximize() {
   will-change: transform, width, height, opacity;
 }
 
+.theme-light .window-container {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
 .window-container.maximized {
   border-radius: 0;
   transform: none !important;
@@ -356,11 +362,22 @@ function toggleMaximize() {
   cursor: grab;
   user-select: none;
   height: 40px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-light .title-bar {
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .window-container.maximized .title-bar {
   background: rgba(255, 255, 255, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-light .window-container.maximized .title-bar {
+  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .title-bar:active {
@@ -385,6 +402,11 @@ function toggleMaximize() {
   width: 14px;
   height: 14px;
   color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.theme-light .icon {
+  color: rgba(29, 29, 31, 0.8);
 }
 
 .window-title {
@@ -392,6 +414,12 @@ function toggleMaximize() {
   font-size: 0.9rem;
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.theme-light .window-title {
+  color: #1d1d1f;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .title-bar-right {
@@ -414,6 +442,11 @@ function toggleMaximize() {
 
 .title-bar-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.theme-light .title-bar-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .title-bar-btn.close:hover {
@@ -432,6 +465,11 @@ function toggleMaximize() {
   width: 12px;
   height: 12px;
   color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.theme-light .btn-icon {
+  color: rgba(29, 29, 31, 0.8);
 }
 
 .window-content {
@@ -447,15 +485,29 @@ function toggleMaximize() {
 
 .window-content::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+.theme-light .window-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .window-content::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.theme-light .window-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .window-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+.theme-light .window-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
 }
 
 /* Custom resize handle */
@@ -468,9 +520,18 @@ function toggleMaximize() {
   cursor: se-resize;
   background: linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.3) 30%, rgba(255, 255, 255, 0.3) 50%, transparent 50%);
   z-index: 10;
+  transition: background 0.3s ease;
+}
+
+.theme-light .resize-handle {
+  background: linear-gradient(-45deg, transparent 30%, rgba(0, 0, 0, 0.3) 30%, rgba(0, 0, 0, 0.3) 50%, transparent 50%);
 }
 
 .resize-handle:hover {
   background: linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.5) 30%, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+}
+
+.theme-light .resize-handle:hover {
+  background: linear-gradient(-45deg, transparent 30%, rgba(0, 0, 0, 0.5) 30%, rgba(0, 0, 0, 0.5) 50%, transparent 50%);
 }
 </style> 
