@@ -36,6 +36,38 @@ export const useWindowManager = () => {
   const windows = useState<WindowState[]>('dxos-windows', () => [])
   const nextZIndex = useState<number>('dxos-next-z-index', () => 1000)
   const dockPosition = useState<{ x: number, y: number }>('dxos-dock-position', () => ({ x: 0, y: 0 }))
+  
+  // Z-index management constants
+  const MAX_Z_INDEX = 9999 // Maximum z-index before reset
+  const BASE_Z_INDEX = 1000 // Starting z-index
+  
+  // Normalize z-indexes when they get too high
+  const normalizeZIndexes = (): void => {
+    if (nextZIndex.value >= MAX_Z_INDEX) {
+      // Sort windows by current z-index
+      const sortedWindows = [...windows.value].sort((a, b) => a.zIndex - b.zIndex)
+      
+      // Reassign z-indexes starting from BASE_Z_INDEX
+      sortedWindows.forEach((window, index) => {
+        const windowIndex = windows.value.findIndex(w => w.id === window.id)
+        if (windowIndex !== -1) {
+          windows.value[windowIndex] = {
+            ...windows.value[windowIndex],
+            zIndex: BASE_Z_INDEX + index
+          }
+        }
+      })
+      
+      // Reset nextZIndex to continue from the highest assigned value
+      nextZIndex.value = BASE_Z_INDEX + windows.value.length
+    }
+  }
+  
+  // Get next z-index with automatic normalization
+  const getNextZIndex = (): number => {
+    normalizeZIndexes()
+    return nextZIndex.value++
+  }
 
   // Initialize windows from localStorage if available
   onMounted(() => {
@@ -233,7 +265,7 @@ export const useWindowManager = () => {
           ...windows.value[index],
           isVisible: true,
           isMinimized: false,
-          zIndex: nextZIndex.value++
+          zIndex: getNextZIndex()
         }
       }
       return existingWindow.id
@@ -265,7 +297,7 @@ export const useWindowManager = () => {
       height: responsiveHeight,
       isMinimized: false,
       isMaximized: false,
-      zIndex: nextZIndex.value++,
+      zIndex: getNextZIndex(),
       isVisible: true
     }
 
@@ -301,7 +333,8 @@ export const useWindowManager = () => {
         // Fallback if no original position stored
         windows.value[index] = {
           ...window,
-          isMinimized: false
+          isMinimized: false,
+          zIndex: getNextZIndex() // Bring to front
         }
       }
     }
@@ -386,7 +419,8 @@ export const useWindowManager = () => {
           isMinimized: false,
           isAnimating: false,
           animationProgress: 1,
-          animationOutlines: []
+          animationOutlines: [],
+          zIndex: getNextZIndex() // Bring to front
         }
       }
     }
@@ -550,7 +584,7 @@ export const useWindowManager = () => {
     if (index !== -1) {
       windows.value[index] = {
         ...windows.value[index],
-        zIndex: nextZIndex.value++
+        zIndex: getNextZIndex()
       }
     }
   }
