@@ -1,43 +1,51 @@
 <template>
-  <div class="about-page">
-    <div class="about-card">
-      <h1>About DXOS</h1>
-      <p class="subtitle">A modern web application with a macOS-inspired interface</p>
-      
-      <div class="content-section">
-        <h2>Features</h2>
-        <ul class="feature-list">
-          <li>macOS-style menu bar with live clock</li>
-          <li>Interactive dock with navigation</li>
-          <li>Glassmorphism design elements</li>
-          <li>Responsive layout</li>
-          <li>Built with Nuxt 3 and Vue 3</li>
-        </ul>
-      </div>
+  <WindowTitleBar 
+    title="About DXOS"
+    :width="1000"
+    :height="800"
+    :initial-x="200"
+    :initial-y="150"
+  >
+    <div class="about-page">
+      <div class="about-card">
+        <h1>About DXOS</h1>
+        <p class="subtitle">A modern web application with a macOS-inspired interface</p>
+        
+        <div class="content-section">
+          <h2>Features</h2>
+          <ul class="feature-list">
+            <li>macOS-style menu bar with live clock</li>
+            <li>Interactive dock with navigation</li>
+            <li>Glassmorphism design elements</li>
+            <li>Responsive layout</li>
+            <li>Built with Nuxt 3 and Vue 3</li>
+          </ul>
+        </div>
 
-      <div class="content-section">
-        <h2>Technology Stack</h2>
-        <div class="tech-grid">
-          <div class="tech-item">
-            <UIcon name="i-logos-nuxt-icon" class="tech-icon" />
-            <span>Nuxt 3</span>
-          </div>
-          <div class="tech-item">
-            <UIcon name="i-logos-vue" class="tech-icon" />
-            <span>Vue 3</span>
-          </div>
-          <div class="tech-item">
-            <UIcon name="i-logos-typescript-icon" class="tech-icon" />
-            <span>TypeScript</span>
-          </div>
-          <div class="tech-item">
-            <UIcon name="i-logos-tailwindcss-icon" class="tech-icon" />
-            <span>Tailwind CSS</span>
+        <div class="content-section">
+          <h2>Technology Stack</h2>
+          <div class="tech-grid">
+            <div class="tech-item">
+              <UIcon name="i-logos-nuxt-icon" class="tech-icon" />
+              <span>Nuxt 3</span>
+            </div>
+            <div class="tech-item">
+              <UIcon name="i-logos-vue" class="tech-icon" />
+              <span>Vue 3</span>
+            </div>
+            <div class="tech-item">
+              <UIcon name="i-logos-typescript-icon" class="tech-icon" />
+              <span>TypeScript</span>
+            </div>
+            <div class="tech-item">
+              <UIcon name="i-logos-tailwindcss-icon" class="tech-icon" />
+              <span>Tailwind CSS</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </WindowTitleBar>
 </template>
 
 <style scoped>
@@ -46,7 +54,7 @@
   justify-content: center;
   align-items: flex-start;
   min-height: 100%;
-  padding: 40px;
+  padding: 20px;
 }
 
 .about-card {

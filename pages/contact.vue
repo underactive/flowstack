@@ -1,97 +1,105 @@
 <template>
-  <div class="contact-page">
-    <div class="contact-container">
-      <h1>Contact Us</h1>
-      <p class="subtitle">Get in touch with our team</p>
-      
-      <div class="contact-content">
-        <div class="contact-info">
-          <h2>Get in Touch</h2>
-          <p>We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
-          
-          <div class="contact-methods">
-            <div class="contact-method">
-              <UIcon name="i-heroicons-envelope" class="method-icon" />
-              <div>
-                <h3>Email</h3>
-                <p>hello@dxos.com</p>
-              </div>
-            </div>
+  <WindowTitleBar 
+    title="Contact Us"
+    :width="1200"
+    :height="900"
+    :initial-x="250"
+    :initial-y="200"
+  >
+    <div class="contact-page">
+      <div class="contact-container">
+        <h1>Contact Us</h1>
+        <p class="subtitle">Get in touch with our team</p>
+        
+        <div class="contact-content">
+          <div class="contact-info">
+            <h2>Get in Touch</h2>
+            <p>We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
             
-            <div class="contact-method">
-              <UIcon name="i-heroicons-phone" class="method-icon" />
-              <div>
-                <h3>Phone</h3>
-                <p>+1 (555) 123-4567</p>
+            <div class="contact-methods">
+              <div class="contact-method">
+                <UIcon name="i-heroicons-envelope" class="method-icon" />
+                <div>
+                  <h3>Email</h3>
+                  <p>hello@dxos.com</p>
+                </div>
               </div>
-            </div>
-            
-            <div class="contact-method">
-              <UIcon name="i-heroicons-map-pin" class="method-icon" />
-              <div>
-                <h3>Office</h3>
-                <p>123 Innovation Drive<br>Tech City, TC 12345</p>
+              
+              <div class="contact-method">
+                <UIcon name="i-heroicons-phone" class="method-icon" />
+                <div>
+                  <h3>Phone</h3>
+                  <p>+1 (555) 123-4567</p>
+                </div>
+              </div>
+              
+              <div class="contact-method">
+                <UIcon name="i-heroicons-map-pin" class="method-icon" />
+                <div>
+                  <h3>Office</h3>
+                  <p>123 Innovation Drive<br>Tech City, TC 12345</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <div class="contact-form">
-          <h2>Send Message</h2>
-          <form @submit.prevent="submitForm">
-            <div class="form-group">
-              <label for="name">Name</label>
-              <input 
-                id="name"
-                v-model="form.name"
-                type="text" 
-                required
-                placeholder="Your name"
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input 
-                id="email"
-                v-model="form.email"
-                type="email" 
-                required
-                placeholder="your.email@example.com"
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="subject">Subject</label>
-              <input 
-                id="subject"
-                v-model="form.subject"
-                type="text" 
-                required
-                placeholder="What's this about?"
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="message">Message</label>
-              <textarea 
-                id="message"
-                v-model="form.message"
-                rows="5"
-                required
-                placeholder="Your message..."
-              ></textarea>
-            </div>
-            
-            <button type="submit" class="submit-btn">
-              <UIcon name="i-heroicons-paper-airplane" class="btn-icon" />
-              Send Message
-            </button>
-          </form>
+          
+          <div class="contact-form">
+            <h2>Send Message</h2>
+            <form @submit.prevent="submitForm">
+              <div class="form-group">
+                <label for="name">Name</label>
+                <input 
+                  id="name"
+                  v-model="form.name"
+                  type="text" 
+                  required
+                  placeholder="Your name"
+                />
+              </div>
+              
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input 
+                  id="email"
+                  v-model="form.email"
+                  type="email" 
+                  required
+                  placeholder="your.email@example.com"
+                />
+              </div>
+              
+              <div class="form-group">
+                <label for="subject">Subject</label>
+                <input 
+                  id="subject"
+                  v-model="form.subject"
+                  type="text" 
+                  required
+                  placeholder="What's this about?"
+                />
+              </div>
+              
+              <div class="form-group">
+                <label for="message">Message</label>
+                <textarea 
+                  id="message"
+                  v-model="form.message"
+                  rows="5"
+                  required
+                  placeholder="Your message..."
+                ></textarea>
+              </div>
+              
+              <button type="submit" class="submit-btn">
+                <UIcon name="i-heroicons-paper-airplane" class="btn-icon" />
+                Send Message
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </WindowTitleBar>
 </template>
 
 <script setup>
@@ -123,7 +131,7 @@ function submitForm() {
   justify-content: center;
   align-items: flex-start;
   min-height: 100%;
-  padding: 40px;
+  padding: 20px;
 }
 
 .contact-container {

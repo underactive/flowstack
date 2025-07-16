@@ -1,136 +1,144 @@
 <template>
-  <div class="settings-page">
-    <div class="settings-container">
-      <h1>Settings</h1>
-      <p class="subtitle">Customize your DXOS experience</p>
-      
-      <div class="settings-content">
-        <div class="settings-section">
-          <h2>Appearance</h2>
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Theme</h3>
-              <p>Choose your preferred color scheme</p>
+  <WindowTitleBar 
+    title="Settings"
+    :width="900"
+    :height="800"
+    :initial-x="350"
+    :initial-y="300"
+  >
+    <div class="settings-page">
+      <div class="settings-container">
+        <h1>Settings</h1>
+        <p class="subtitle">Customize your DXOS experience</p>
+        
+        <div class="settings-content">
+          <div class="settings-section">
+            <h2>Appearance</h2>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Theme</h3>
+                <p>Choose your preferred color scheme</p>
+              </div>
+              <div class="setting-control">
+                <select v-model="settings.theme" class="select-input">
+                  <option value="auto">Auto</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
             </div>
-            <div class="setting-control">
-              <select v-model="settings.theme" class="select-input">
-                <option value="auto">Auto</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Background</h3>
+                <p>Select your desktop background</p>
+              </div>
+              <div class="setting-control">
+                <div class="background-options">
+                  <div 
+                    v-for="bg in backgrounds" 
+                    :key="bg.id"
+                    class="bg-option"
+                    :class="{ active: settings.background === bg.id }"
+                    @click="settings.background = bg.id"
+                  >
+                    <div class="bg-preview" :style="{ background: bg.gradient }"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Background</h3>
-              <p>Select your desktop background</p>
+          <div class="settings-section">
+            <h2>Interface</h2>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Dock Position</h3>
+                <p>Choose where the dock appears</p>
+              </div>
+              <div class="setting-control">
+                <select v-model="settings.dockPosition" class="select-input">
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
             </div>
-            <div class="setting-control">
-              <div class="background-options">
-                <div 
-                  v-for="bg in backgrounds" 
-                  :key="bg.id"
-                  class="bg-option"
-                  :class="{ active: settings.background === bg.id }"
-                  @click="settings.background = bg.id"
-                >
-                  <div class="bg-preview" :style="{ background: bg.gradient }"></div>
-                </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Show Clock</h3>
+                <p>Display the clock in the menu bar</p>
+              </div>
+              <div class="setting-control">
+                <input 
+                  type="checkbox" 
+                  v-model="settings.showClock"
+                  class="checkbox-input"
+                />
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Dock Magnification</h3>
+                <p>Enable dock icon magnification on hover</p>
+              </div>
+              <div class="setting-control">
+                <input 
+                  type="checkbox" 
+                  v-model="settings.dockMagnification"
+                  class="checkbox-input"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h2>Notifications</h2>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Enable Notifications</h3>
+                <p>Receive notifications for updates and messages</p>
+              </div>
+              <div class="setting-control">
+                <input 
+                  type="checkbox" 
+                  v-model="settings.notifications"
+                  class="checkbox-input"
+                />
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <h3>Sound Effects</h3>
+                <p>Play sounds for system events</p>
+              </div>
+              <div class="setting-control">
+                <input 
+                  type="checkbox" 
+                  v-model="settings.soundEffects"
+                  class="checkbox-input"
+                />
               </div>
             </div>
           </div>
         </div>
         
-        <div class="settings-section">
-          <h2>Interface</h2>
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Dock Position</h3>
-              <p>Choose where the dock appears</p>
-            </div>
-            <div class="setting-control">
-              <select v-model="settings.dockPosition" class="select-input">
-                <option value="bottom">Bottom</option>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Show Clock</h3>
-              <p>Display the clock in the menu bar</p>
-            </div>
-            <div class="setting-control">
-              <input 
-                type="checkbox" 
-                v-model="settings.showClock"
-                class="checkbox-input"
-              />
-            </div>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Dock Magnification</h3>
-              <p>Enable dock icon magnification on hover</p>
-            </div>
-            <div class="setting-control">
-              <input 
-                type="checkbox" 
-                v-model="settings.dockMagnification"
-                class="checkbox-input"
-              />
-            </div>
-          </div>
+        <div class="settings-actions">
+          <button @click="resetSettings" class="reset-btn">
+            <UIcon name="i-heroicons-arrow-path" class="btn-icon" />
+            Reset to Defaults
+          </button>
+          <button @click="saveSettings" class="save-btn">
+            <UIcon name="i-heroicons-check" class="btn-icon" />
+            Save Settings
+          </button>
         </div>
-        
-        <div class="settings-section">
-          <h2>Notifications</h2>
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Enable Notifications</h3>
-              <p>Receive notifications for updates and messages</p>
-            </div>
-            <div class="setting-control">
-              <input 
-                type="checkbox" 
-                v-model="settings.notifications"
-                class="checkbox-input"
-              />
-            </div>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-info">
-              <h3>Sound Effects</h3>
-              <p>Play sounds for system events</p>
-            </div>
-            <div class="setting-control">
-              <input 
-                type="checkbox" 
-                v-model="settings.soundEffects"
-                class="checkbox-input"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="settings-actions">
-        <button @click="resetSettings" class="reset-btn">
-          <UIcon name="i-heroicons-arrow-path" class="btn-icon" />
-          Reset to Defaults
-        </button>
-        <button @click="saveSettings" class="save-btn">
-          <UIcon name="i-heroicons-check" class="btn-icon" />
-          Save Settings
-        </button>
       </div>
     </div>
-  </div>
+  </WindowTitleBar>
 </template>
 
 <script setup>
@@ -179,7 +187,7 @@ function resetSettings() {
   justify-content: center;
   align-items: flex-start;
   min-height: 100%;
-  padding: 40px;
+  padding: 20px;
 }
 
 .settings-container {

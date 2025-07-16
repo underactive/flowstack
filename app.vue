@@ -162,8 +162,8 @@ function navigateToPage(route) {
 /* Desktop Content */
 .desktop-content {
   flex: 1;
-  padding: 20px;
-  overflow: auto;
+  overflow: hidden;
+  position: relative;
 }
 
 /* Dock */
