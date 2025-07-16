@@ -19,6 +19,7 @@ export const useSettings = () => {
       background: 'gradient-1',
       autoHideDock: false,
       showClock: true,
+      use24HourFormat: false,
       dockMagnification: true,
       notifications: true,
       soundEffects: false
@@ -39,6 +40,7 @@ export const useSettings = () => {
       background: 'gradient-1',
       autoHideDock: false,
       showClock: true,
+      use24HourFormat: false,
       dockMagnification: true,
       notifications: true,
       soundEffects: false

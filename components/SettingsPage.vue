@@ -74,6 +74,20 @@
           
           <div class="setting-item">
             <div class="setting-info">
+              <h3>24-hour Format</h3>
+              <p>Display time in 24-hour format instead of 12-hour</p>
+            </div>
+            <div class="setting-control">
+              <input 
+                type="checkbox" 
+                v-model="settings.use24HourFormat"
+                class="checkbox-input"
+              />
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <div class="setting-info">
               <h3>Dock Magnification</h3>
               <p>Enable dock icon magnification on hover</p>
             </div>
