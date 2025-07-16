@@ -115,7 +115,16 @@ export const useWindowManager = () => {
     
     if (dockContainer) {
       const dockRect = dockContainer.getBoundingClientRect()
-      maxY = dockRect.top - height // Stop above the dock
+      // Check if dock is auto-hidden
+      const { settings } = useSettings()
+      const { isDockVisible } = useDockAutoHide()
+      
+      if (!settings.value.autoHideDock || isDockVisible.value) {
+        maxY = dockRect.top - height // Stop above the dock
+      } else {
+        // If dock is auto-hidden, allow windows to go to bottom of screen
+        maxY = viewportHeight - height
+      }
     }
     
     // Calculate maximum allowed position
@@ -163,7 +172,14 @@ export const useWindowManager = () => {
     
     if (dockContainer) {
       const dockRect = dockContainer.getBoundingClientRect()
-      maxHeight = Math.min(maxHeight, dockRect.top - 40)
+      // Check if dock is auto-hidden
+      const { settings } = useSettings()
+      const { isDockVisible } = useDockAutoHide()
+      
+      if (!settings.value.autoHideDock || isDockVisible.value) {
+        maxHeight = Math.min(maxHeight, dockRect.top - 40)
+      }
+      // If dock is auto-hidden, don't limit height
     }
     
     // Maximum window size (leave some space for margins)

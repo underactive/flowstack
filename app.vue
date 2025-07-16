@@ -34,7 +34,11 @@
     </div>
 
     <!-- Dock -->
-    <div class="dock" ref="dockRef">
+    <div 
+      class="dock" 
+      ref="dockElement"
+      :class="{ 'dock-hidden': !isDockVisible && settings.autoHideDock }"
+    >
       <div class="dock-container">
         <!-- Regular dock items -->
         <div class="dock-section">
@@ -83,6 +87,7 @@ const windowManager = useWindowManager()
 const { openWindow, windows, restoreWindow } = windowManager
 const { currentBackground } = useBackground()
 const { settings } = useSettings()
+const { isDockVisible, dockElement } = useDockAutoHide()
 
 // Get minimized windows
 const minimizedWindows = computed(() => 
@@ -262,6 +267,10 @@ function navigateToPage(route) {
   align-items: flex-end;
   padding-bottom: 8px;
   transition: transform 0.3s ease;
+}
+
+.dock-hidden {
+  transform: translateY(100%);
 }
 
 

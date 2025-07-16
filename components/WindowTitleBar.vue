@@ -76,7 +76,17 @@ const getMaximizedHeight = () => {
   if (dockContainer) {
     const dockRect = dockContainer.getBoundingClientRect()
     const menuBarHeight = 24
-    return `${dockRect.top - menuBarHeight}px`
+    
+    // Check if dock is auto-hidden
+    const { settings } = useSettings()
+    const { isDockVisible } = useDockAutoHide()
+    
+    if (!settings.value.autoHideDock || isDockVisible.value) {
+      return `${dockRect.top - menuBarHeight}px`
+    } else {
+      // If dock is auto-hidden, use full height
+      return 'calc(100vh - 24px)'
+    }
   }
   // Fallback if dock not found
   return 'calc(100vh - 24px - 80px)'
@@ -152,7 +162,16 @@ function onDrag(event) {
   
   if (dockContainer) {
     const dockRect = dockContainer.getBoundingClientRect()
-    maxY = dockRect.top - props.windowState.height // Stop above the dock
+    // Check if dock is auto-hidden
+    const { settings } = useSettings()
+    const { isDockVisible } = useDockAutoHide()
+    
+    if (!settings.value.autoHideDock || isDockVisible.value) {
+      maxY = dockRect.top - props.windowState.height // Stop above the dock
+    } else {
+      // If dock is auto-hidden, allow windows to go to bottom of screen
+      maxY = window.innerHeight - props.windowState.height
+    }
   }
   
   // Keep window within viewport bounds
@@ -224,7 +243,14 @@ function onResize(event) {
   
   if (dockContainer) {
     const dockRect = dockContainer.getBoundingClientRect()
-    maxHeight = Math.min(maxHeight, dockRect.top - 40)
+    // Check if dock is auto-hidden
+    const { settings } = useSettings()
+    const { isDockVisible } = useDockAutoHide()
+    
+    if (!settings.value.autoHideDock || isDockVisible.value) {
+      maxHeight = Math.min(maxHeight, dockRect.top - 40)
+    }
+    // If dock is auto-hidden, don't limit height
   }
   
   const newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px

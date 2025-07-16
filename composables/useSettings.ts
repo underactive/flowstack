@@ -17,7 +17,7 @@ export const useSettings = () => {
     return {
       theme: 'dark',
       background: 'gradient-1',
-      dockPosition: 'bottom',
+      autoHideDock: false,
       showClock: true,
       dockMagnification: true,
       notifications: true,
@@ -37,7 +37,7 @@ export const useSettings = () => {
     settings.value = {
       theme: 'dark',
       background: 'gradient-1',
-      dockPosition: 'bottom',
+      autoHideDock: false,
       showClock: true,
       dockMagnification: true,
       notifications: true,

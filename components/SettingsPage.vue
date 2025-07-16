@@ -46,15 +46,15 @@
           <h2>Interface</h2>
           <div class="setting-item">
             <div class="setting-info">
-              <h3>Dock Position</h3>
-              <p>Choose where the dock appears</p>
+              <h3>Auto-hide Dock</h3>
+              <p>Automatically hide the dock when not in use</p>
             </div>
             <div class="setting-control">
-              <select v-model="settings.dockPosition" class="select-input">
-                <option value="bottom">Bottom</option>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
+              <input 
+                type="checkbox" 
+                v-model="settings.autoHideDock"
+                class="checkbox-input"
+              />
             </div>
           </div>
           
