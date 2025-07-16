@@ -5,6 +5,7 @@
     :class="{ 
       'maximized': windowState.isMaximized, 
       'dragging': isDragging,
+      'resizing': isResizing,
       'minimizing': windowState.isAnimating && windowState.isMinimized,
       'restoring': windowState.isAnimating && !windowState.isMinimized
     }"
@@ -41,6 +42,12 @@
     <div class="window-content">
       <slot></slot>
     </div>
+    <!-- Custom resize handle -->
+    <div 
+      v-if="!windowState.isMaximized"
+      class="resize-handle"
+      @mousedown="startResize"
+    ></div>
   </div>
 </template>
 
@@ -52,11 +59,14 @@ const props = defineProps({
   }
 })
 
-const { minimizeWindowWithAnimation, maximizeWindow, closeWindow, bringToFront, updateWindowPosition } = useWindowManager()
+const { minimizeWindowWithAnimation, maximizeWindow, closeWindow, bringToFront, updateWindowPosition, smoothUpdateSize } = useWindowManager()
 
 const isDragging = ref(false)
+const isResizing = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 const dragStartPos = ref({ x: 0, y: 0 })
+const resizeStartSize = ref({ width: 0, height: 0 })
+const resizeStartPos = ref({ x: 0, y: 0 })
 
 // Throttle function for performance
 function throttle(func, limit) {
@@ -135,6 +145,59 @@ function stopDrag() {
   document.body.style.cursor = ''
 }
 
+function startResize(event) {
+  if (props.windowState.isMaximized) return
+  
+  event.preventDefault()
+  event.stopPropagation()
+  
+  isResizing.value = true
+  bringToFront(props.windowState.id)
+  
+  // Store initial size and position
+  resizeStartSize.value = {
+    width: props.windowState.width,
+    height: props.windowState.height
+  }
+  resizeStartPos.value = {
+    x: event.clientX,
+    y: event.clientY
+  }
+  
+  // Use passive listeners for better performance
+  document.addEventListener('mousemove', onResize, { passive: false })
+  document.addEventListener('mouseup', stopResize, { passive: true })
+  
+  // Prevent text selection during resize
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'se-resize'
+}
+
+function onResize(event) {
+  if (!isResizing.value) return
+  
+  event.preventDefault()
+  
+  const deltaX = event.clientX - resizeStartPos.value.x
+  const deltaY = event.clientY - resizeStartPos.value.y
+  
+  const newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px
+  const newHeight = Math.max(300, resizeStartSize.value.height + deltaY) // Min height 300px
+  
+  // Use smooth update for immediate visual feedback
+  smoothUpdateSize(props.windowState.id, newWidth, newHeight)
+}
+
+function stopResize() {
+  isResizing.value = false
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+  
+  // Restore cursor and selection
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+}
+
 function close() {
   closeWindow(props.windowState.id)
 }
@@ -173,7 +236,6 @@ function maximize() {
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  resize: both;
   min-width: 400px;
   min-height: 300px;
   transition: all 0.3s ease;
@@ -182,7 +244,6 @@ function maximize() {
 
 .window-container.maximized {
   border-radius: 0;
-  resize: none;
   transform: none !important;
 }
 
@@ -191,9 +252,13 @@ function maximize() {
   cursor: grabbing;
 }
 
+.window-container.resizing {
+  transition: none;
+  cursor: se-resize;
+}
+
 .window-container.minimizing {
   transition: none;
-  resize: none;
   pointer-events: none;
   /* Hide content during System 7 minimize animation */
   opacity: 0;
@@ -201,7 +266,6 @@ function maximize() {
 
 .window-container.restoring {
   transition: none;
-  resize: none;
   pointer-events: none;
   /* Show content during System 7 restore animation */
   opacity: 1;
@@ -317,9 +381,8 @@ function maximize() {
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* Resize handle */
-.window-container:not(.maximized)::after {
-  content: '';
+/* Custom resize handle */
+.resize-handle {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -327,5 +390,10 @@ function maximize() {
   height: 15px;
   cursor: se-resize;
   background: linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.3) 30%, rgba(255, 255, 255, 0.3) 50%, transparent 50%);
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.5) 30%, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
 }
 </style> 

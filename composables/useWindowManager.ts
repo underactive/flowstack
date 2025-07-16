@@ -57,6 +57,7 @@ export const useWindowManager = () => {
 
   // Debounce function for localStorage saving
   let saveTimeout: NodeJS.Timeout | null = null
+  let lastSavedState: string = ''
   
   // Save windows to localStorage whenever they change (debounced)
   watch(windows, (newWindows) => {
@@ -67,9 +68,20 @@ export const useWindowManager = () => {
     
     // Debounce the save to avoid excessive localStorage writes
     saveTimeout = setTimeout(() => {
-      localStorage.setItem('dxos-windows', JSON.stringify(newWindows))
+      const newState = JSON.stringify(newWindows)
+      // Only save if the state actually changed
+      if (newState !== lastSavedState) {
+        localStorage.setItem('dxos-windows', newState)
+        lastSavedState = newState
+      }
     }, 100) // Save after 100ms of no changes
-  }, { deep: true })
+  }, { deep: false }) // Don't use deep watching for better performance
+
+  // Smooth resize updates
+  const smoothUpdateSize = (windowId: string, width: number, height: number) => {
+    // Update immediately for responsive feel
+    updateWindowSize(windowId, width, height)
+  }
 
   const openWindow = (route: string, title: string, options: WindowOptions = {}): string => {
     const existingWindow = windows.value.find(w => w.route === route)
@@ -396,21 +408,27 @@ export const useWindowManager = () => {
       // Only update if position actually changed
       const currentWindow = windows.value[index]
       if (currentWindow.x !== x || currentWindow.y !== y) {
-        // Create a new object to ensure reactivity
-        windows.value[index] = {
-          ...currentWindow,
-          x,
-          y
-        }
+        // Update properties directly for better performance
+        currentWindow.x = x
+        currentWindow.y = y
+        // Trigger reactivity by reassigning the array
+        windows.value = [...windows.value]
       }
     }
   }
 
   const updateWindowSize = (windowId: string, width: number, height: number): void => {
-    const window = windows.value.find(w => w.id === windowId)
-    if (window) {
-      window.width = width
-      window.height = height
+    const index = windows.value.findIndex(w => w.id === windowId)
+    if (index !== -1) {
+      const currentWindow = windows.value[index]
+      // Only update if size actually changed
+      if (currentWindow.width !== width || currentWindow.height !== height) {
+        // Update properties directly for better performance
+        currentWindow.width = width
+        currentWindow.height = height
+        // Trigger reactivity by reassigning the array
+        windows.value = [...windows.value]
+      }
     }
   }
 
@@ -436,6 +454,7 @@ export const useWindowManager = () => {
     updateWindowPosition,
     updateWindowSize,
     getVisibleWindows,
-    getWindowByRoute
+    getWindowByRoute,
+    smoothUpdateSize
   }
 } 
