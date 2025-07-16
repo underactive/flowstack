@@ -21,7 +21,7 @@
         <div class="status-icons">
           <UIcon name="i-heroicons-wifi" class="status-icon" />
           <UIcon name="i-heroicons-battery-100" class="status-icon" />
-          <div class="clock">
+          <div v-if="settings.showClock" class="clock">
             {{ currentTime }}
           </div>
         </div>
