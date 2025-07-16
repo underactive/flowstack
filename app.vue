@@ -31,22 +31,40 @@
       <WindowManager />
     </div>
 
-    <!-- Taskbar -->
-    <WindowTaskbar />
-
     <!-- Dock -->
     <div class="dock">
       <div class="dock-container">
-        <div 
-          v-for="(item, index) in dockItems" 
-          :key="index"
-          class="dock-item"
-          @click="navigateToPage(item.route)"
-        >
-          <div class="dock-icon">
-            <UIcon :name="item.icon" class="icon" />
+        <!-- Regular dock items -->
+        <div class="dock-section">
+          <div 
+            v-for="(item, index) in dockItems" 
+            :key="index"
+            class="dock-item"
+            @click="navigateToPage(item.route)"
+          >
+            <div class="dock-icon">
+              <UIcon :name="item.icon" class="icon" />
+            </div>
+            <div class="dock-label">{{ item.label }}</div>
           </div>
-          <div class="dock-label">{{ item.label }}</div>
+        </div>
+
+        <!-- Vertical divider -->
+        <div v-if="minimizedWindows.length > 0" class="dock-divider"></div>
+
+        <!-- Minimized windows -->
+        <div v-if="minimizedWindows.length > 0" class="dock-section">
+          <div 
+            v-for="window in minimizedWindows" 
+            :key="window.id"
+            class="dock-item minimized-window"
+            @click="restoreWindow(window.id)"
+          >
+            <div class="dock-icon">
+              <UIcon name="i-heroicons-window" class="icon" />
+            </div>
+            <div class="dock-label">{{ window.title }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -56,7 +74,20 @@
 <script setup>
 const currentTime = ref('')
 const windowManager = useWindowManager()
-const { openWindow } = windowManager
+const { openWindow, windows } = windowManager
+
+// Get minimized windows
+const minimizedWindows = computed(() => 
+  windows.value.filter(w => w.isMinimized)
+)
+
+// Function to restore minimized window
+function restoreWindow(windowId) {
+  const window = windows.value.find(w => w.id === windowId)
+  if (window) {
+    window.isMinimized = false
+  }
+}
 
 // Update time every second
 onMounted(() => {
@@ -215,6 +246,19 @@ function navigateToPage(route) {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.dock-section {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dock-divider {
+  width: 1px;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 0 8px;
+}
+
 .dock-item {
   display: flex;
   flex-direction: column;
@@ -229,6 +273,16 @@ function navigateToPage(route) {
 .dock-item:hover {
   transform: scale(1.1);
   background: rgba(255, 255, 255, 0.1);
+}
+
+.minimized-window {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.minimized-window:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .dock-icon {
