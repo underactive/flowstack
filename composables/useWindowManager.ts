@@ -10,6 +10,18 @@ interface WindowState {
   isMaximized: boolean
   zIndex: number
   isVisible: boolean
+  isAnimating?: boolean
+  animationProgress?: number
+  // System 7 animation properties
+  animationOutlines?: Array<{
+    x: number
+    y: number
+    width: number
+    height: number
+    opacity: number
+  }>
+  originalPosition?: { x: number, y: number, width: number, height: number }
+  dockPosition?: { x: number, y: number }
 }
 
 interface WindowOptions {
@@ -23,6 +35,7 @@ export const useWindowManager = () => {
   // Use useState to create global state that's shared across components
   const windows = useState<WindowState[]>('dxos-windows', () => [])
   const nextZIndex = useState<number>('dxos-next-z-index', () => 1000)
+  const dockPosition = useState<{ x: number, y: number }>('dxos-dock-position', () => ({ x: 0, y: 0 }))
 
   // Initialize windows from localStorage if available
   onMounted(() => {
@@ -112,6 +125,251 @@ export const useWindowManager = () => {
     }
   }
 
+  const restoreWindow = (windowId: string): void => {
+    const index = windows.value.findIndex(w => w.id === windowId)
+    if (index !== -1) {
+      const window = windows.value[index]
+      if (window.originalPosition) {
+        // Start restore animation
+        restoreWindowWithAnimation(windowId, window.originalPosition)
+      } else {
+        // Fallback if no original position stored
+        windows.value[index] = {
+          ...window,
+          isMinimized: false
+        }
+      }
+    }
+  }
+
+  const restoreWindowWithAnimation = (windowId: string, originalPosition: { x: number, y: number, width: number, height: number }): void => {
+    const index = windows.value.findIndex(w => w.id === windowId)
+    if (index === -1) return
+
+    const windowState = windows.value[index]
+    
+    // Use current dock position where the window is actually located
+    const dockPosition = getCurrentDockPositionForWindow(windowId)
+    
+    // Start animation
+    windows.value[index] = {
+      ...windowState,
+      isAnimating: true,
+      animationProgress: 0,
+      animationOutlines: []
+    }
+
+    // Animation duration in milliseconds (System 7 was faster and choppier)
+    const duration = 400
+    const startTime = Date.now()
+    
+    // Number of outline frames to create during animation (fewer for choppier effect)
+    const outlineCount = 8
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // System 7 style easing - completely linear, no smoothness
+      const easeOut = progress
+      
+      // Calculate current position and size (reverse of minimize)
+      const currentX = dockPosition.x + (originalPosition.x - dockPosition.x) * easeOut
+      const currentY = dockPosition.y + (originalPosition.y - dockPosition.y) * easeOut
+      const currentWidth = 60 + (originalPosition.width - 60) * easeOut // From dock size to original
+      const currentHeight = 60 + (originalPosition.height - 60) * easeOut // From dock size to original
+
+      // Create trail of outlines (chunkier, less smooth)
+      const outlines = []
+      for (let i = 0; i < outlineCount; i++) {
+        const outlineProgress = Math.max(0, easeOut - (i * 0.12)) // Larger gaps between outlines
+        if (outlineProgress > 0) {
+          const outlineX = dockPosition.x + (originalPosition.x - dockPosition.x) * outlineProgress
+          const outlineY = dockPosition.y + (originalPosition.y - dockPosition.y) * outlineProgress
+          const outlineWidth = 60 + (originalPosition.width - 60) * outlineProgress
+          const outlineHeight = 60 + (originalPosition.height - 60) * outlineProgress
+          const outlineOpacity = Math.max(0, 1 - (i * 0.2)) // Faster fade out
+          
+          outlines.push({
+            x: outlineX,
+            y: outlineY,
+            width: outlineWidth,
+            height: outlineHeight,
+            opacity: outlineOpacity
+          })
+        }
+      }
+
+      // Update window state
+      windows.value[index] = {
+        ...windows.value[index],
+        x: currentX,
+        y: currentY,
+        width: currentWidth,
+        height: currentHeight,
+        animationProgress: easeOut,
+        animationOutlines: outlines
+      }
+
+      if (progress < 1) {
+        // Use setTimeout with a longer interval for choppier animation (System 7 style)
+        setTimeout(animate, 50) // 20fps instead of 60fps
+      } else {
+        // Animation complete
+        windows.value[index] = {
+          ...windows.value[index],
+          isMinimized: false,
+          isAnimating: false,
+          animationProgress: 1,
+          animationOutlines: []
+        }
+      }
+    }
+
+    setTimeout(animate, 50) // Start with choppy timing
+  }
+
+  const setDockPosition = (position: { x: number, y: number }) => {
+    dockPosition.value = position
+  }
+
+
+
+  const getCurrentDockPositionForWindow = (windowId: string): { x: number, y: number } => {
+    // Find the minimized window in the dock
+    const minimizedWindows = windows.value.filter(w => w.isMinimized)
+    const windowIndex = minimizedWindows.findIndex(w => w.id === windowId)
+    
+    if (windowIndex === -1) {
+      // Fallback to default dock position
+      return { x: 600, y: 700 }
+    }
+    
+    // Calculate dock position based on current window index
+    const dockElement = document.querySelector('.dock')
+    if (dockElement) {
+      const dockContainer = dockElement.querySelector('.dock-container')
+      
+      if (dockContainer) {
+        const containerRect = dockContainer.getBoundingClientRect()
+        const itemWidth = 60 // Approximate dock item width
+        const itemSpacing = 8 // Gap between items
+        
+        // Calculate position within the dock
+        const totalWidth = minimizedWindows.length * (itemWidth + itemSpacing) - itemSpacing
+        const startX = containerRect.left + (containerRect.width - totalWidth) / 2
+        const itemX = startX + windowIndex * (itemWidth + itemSpacing)
+        const itemY = containerRect.top + 20 // Top of dock area
+        
+        return { x: itemX, y: itemY }
+      }
+    }
+    
+    // Fallback to default position
+    return { x: 600, y: 700 }
+  }
+
+  const minimizeWindowWithAnimation = (windowId: string, targetDockPosition?: { x: number, y: number }): void => {
+    const index = windows.value.findIndex(w => w.id === windowId)
+    if (index === -1) return
+
+    const windowState = windows.value[index]
+    
+    // Use provided dock position or fallback to center bottom
+    const finalDockPosition = targetDockPosition || {
+      x: 600, // Default center
+      y: 700  // Default bottom
+    }
+    
+    // Store original position and size
+    const originalPosition = {
+      x: windowState.x,
+      y: windowState.y,
+      width: windowState.width,
+      height: windowState.height
+    }
+    
+    // Start animation
+    windows.value[index] = {
+      ...windowState,
+      isAnimating: true,
+      isMinimized: true,
+      animationProgress: 0,
+      originalPosition,
+      dockPosition: finalDockPosition,
+      animationOutlines: []
+    }
+
+    // Animation duration in milliseconds (System 7 was faster and choppier)
+    const duration = 400
+    const startTime = Date.now()
+    
+    // Number of outline frames to create during animation (fewer for choppier effect)
+    const outlineCount = 8
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // System 7 style easing - completely linear, no smoothness
+      const easeOut = progress
+      
+      // Calculate current position and size
+      const currentX = originalPosition.x + (finalDockPosition.x - originalPosition.x) * easeOut
+      const currentY = originalPosition.y + (finalDockPosition.y - originalPosition.y) * easeOut
+      const currentWidth = originalPosition.width + (60 - originalPosition.width) * easeOut // Dock item width
+      const currentHeight = originalPosition.height + (60 - originalPosition.height) * easeOut // Dock item height
+
+      // Create trail of outlines (chunkier, less smooth)
+      const outlines = []
+      for (let i = 0; i < outlineCount; i++) {
+        const outlineProgress = Math.max(0, easeOut - (i * 0.12)) // Larger gaps between outlines
+        if (outlineProgress > 0) {
+          const outlineX = originalPosition.x + (finalDockPosition.x - originalPosition.x) * outlineProgress
+          const outlineY = originalPosition.y + (finalDockPosition.y - originalPosition.y) * outlineProgress
+          const outlineWidth = originalPosition.width + (60 - originalPosition.width) * outlineProgress
+          const outlineHeight = originalPosition.height + (60 - originalPosition.height) * outlineProgress
+          const outlineOpacity = Math.max(0, 1 - (i * 0.2)) // Faster fade out
+          
+          outlines.push({
+            x: outlineX,
+            y: outlineY,
+            width: outlineWidth,
+            height: outlineHeight,
+            opacity: outlineOpacity
+          })
+        }
+      }
+
+      // Update window state
+      windows.value[index] = {
+        ...windows.value[index],
+        x: currentX,
+        y: currentY,
+        width: currentWidth,
+        height: currentHeight,
+        animationProgress: easeOut,
+        animationOutlines: outlines
+      }
+
+      if (progress < 1) {
+        // Use setTimeout with a longer interval for choppier animation (System 7 style)
+        setTimeout(animate, 50) // 20fps instead of 60fps
+      } else {
+        // Animation complete
+        windows.value[index] = {
+          ...windows.value[index],
+          isMinimized: true,
+          isAnimating: false,
+          animationProgress: 1,
+          animationOutlines: []
+        }
+      }
+    }
+
+    setTimeout(animate, 50) // Start with choppy timing
+  }
+
   const maximizeWindow = (windowId: string): void => {
     const index = windows.value.findIndex(w => w.id === windowId)
     if (index !== -1) {
@@ -166,9 +424,13 @@ export const useWindowManager = () => {
 
   return {
     windows,
+    dockPosition,
     openWindow,
     closeWindow,
     minimizeWindow,
+    restoreWindow,
+    minimizeWindowWithAnimation,
+    setDockPosition,
     maximizeWindow,
     bringToFront,
     updateWindowPosition,

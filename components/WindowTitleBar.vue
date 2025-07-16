@@ -1,13 +1,19 @@
 <template>
   <div 
-    v-if="windowState && windowState.isVisible && !windowState.isMinimized"
+    v-if="windowState && windowState.isVisible && (!windowState.isMinimized || (windowState.isAnimating && !windowState.isMinimized))"
     class="window-container"
-    :class="{ 'maximized': windowState.isMaximized, 'dragging': isDragging }"
+    :class="{ 
+      'maximized': windowState.isMaximized, 
+      'dragging': isDragging,
+      'minimizing': windowState.isAnimating && windowState.isMinimized,
+      'restoring': windowState.isAnimating && !windowState.isMinimized
+    }"
     :style="{ 
       transform: windowState.isMaximized ? 'none' : `translate(${windowState.x}px, ${windowState.y}px)`,
       width: windowState.isMaximized ? '100vw' : windowState.width + 'px',
       height: windowState.isMaximized ? 'calc(100vh - 104px)' : windowState.height + 'px',
-      zIndex: windowState.zIndex
+      zIndex: windowState.zIndex,
+      opacity: windowState.isAnimating && windowState.isMinimized ? 0 : 1
     }"
   >
     <div 
@@ -46,7 +52,7 @@ const props = defineProps({
   }
 })
 
-const { minimizeWindow, maximizeWindow, closeWindow, bringToFront, updateWindowPosition } = useWindowManager()
+const { minimizeWindowWithAnimation, maximizeWindow, closeWindow, bringToFront, updateWindowPosition } = useWindowManager()
 
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
@@ -134,7 +140,19 @@ function close() {
 }
 
 function minimize() {
-  minimizeWindow(props.windowState.id)
+  // Calculate dock position by finding the dock element
+  const dockElement = document.querySelector('.dock')
+  let dockPosition = { x: 600, y: 700 } // Default fallback
+  
+  if (dockElement) {
+    const dockRect = dockElement.getBoundingClientRect()
+    dockPosition = {
+      x: dockRect.left + dockRect.width / 2 - 30, // Center of dock
+      y: dockRect.top + 20 // Top of dock area
+    }
+  }
+  
+  minimizeWindowWithAnimation(props.windowState.id, dockPosition)
 }
 
 function maximize() {
@@ -143,6 +161,8 @@ function maximize() {
 </script>
 
 <style scoped>
+
+
 .window-container {
   position: fixed;
   left: 0;
@@ -157,7 +177,7 @@ function maximize() {
   min-width: 400px;
   min-height: 300px;
   transition: all 0.3s ease;
-  will-change: transform;
+  will-change: transform, width, height, opacity;
 }
 
 .window-container.maximized {
@@ -170,6 +190,24 @@ function maximize() {
   transition: none;
   cursor: grabbing;
 }
+
+.window-container.minimizing {
+  transition: none;
+  resize: none;
+  pointer-events: none;
+  /* Hide content during System 7 minimize animation */
+  opacity: 0;
+}
+
+.window-container.restoring {
+  transition: none;
+  resize: none;
+  pointer-events: none;
+  /* Show content during System 7 restore animation */
+  opacity: 1;
+}
+
+
 
 .title-bar {
   display: flex;

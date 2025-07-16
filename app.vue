@@ -34,7 +34,7 @@
     </div>
 
     <!-- Dock -->
-    <div class="dock">
+    <div class="dock" ref="dockRef">
       <div class="dock-container">
         <!-- Regular dock items -->
         <div class="dock-section">
@@ -56,17 +56,19 @@
 
         <!-- Minimized windows -->
         <div v-if="minimizedWindows.length > 0" class="dock-section">
-          <div 
-            v-for="window in minimizedWindows" 
-            :key="window.id"
-            class="dock-item minimized-window"
-            @click="restoreWindow(window.id)"
-          >
-            <div class="dock-icon">
-              <UIcon name="i-heroicons-window" class="icon" />
+          <TransitionGroup name="dock-item" tag="div" class="minimized-windows-container">
+            <div 
+              v-for="window in minimizedWindows" 
+              :key="window.id"
+              class="dock-item minimized-window"
+              @click="restoreWindow(window.id)"
+            >
+              <div class="dock-icon">
+                <UIcon name="i-heroicons-window" class="icon" />
+              </div>
+              <div class="dock-label">{{ window.title }}</div>
             </div>
-            <div class="dock-label">{{ window.title }}</div>
-          </div>
+          </TransitionGroup>
         </div>
       </div>
     </div>
@@ -76,20 +78,17 @@
 <script setup>
 const currentTime = ref('')
 const windowManager = useWindowManager()
-const { openWindow, windows } = windowManager
+const { openWindow, windows, restoreWindow } = windowManager
+
 
 // Get minimized windows
 const minimizedWindows = computed(() => 
   windows.value.filter(w => w.isMinimized)
 )
 
-// Function to restore minimized window
-function restoreWindow(windowId) {
-  const window = windows.value.find(w => w.id === windowId)
-  if (window) {
-    window.isMinimized = false
-  }
-}
+
+
+
 
 // Update time every second
 onMounted(() => {
@@ -139,7 +138,16 @@ function navigateToPage(route) {
     '/settings': { width: 900, height: 800, x: 350, y: 300 }
   }
   
-  openWindow(route, windowTitles[route], windowSizes[route])
+  // Check if there's already a minimized window for this route
+  const existingMinimizedWindow = windows.value.find(w => w.route === route && w.isMinimized)
+  
+  if (existingMinimizedWindow) {
+    // Restore the existing minimized window
+    restoreWindow(existingMinimizedWindow.id)
+  } else {
+    // Open a new window
+    openWindow(route, windowTitles[route], windowSizes[route])
+  }
 }
 </script>
 
@@ -235,7 +243,10 @@ function navigateToPage(route) {
   justify-content: center;
   align-items: flex-end;
   padding-bottom: 8px;
+  transition: transform 0.3s ease;
 }
+
+
 
 .dock-container {
   background: rgba(255, 255, 255, 0.1);
@@ -259,6 +270,32 @@ function navigateToPage(route) {
   height: 40px;
   background-color: rgba(255, 255, 255, 0.2);
   margin: 0 8px;
+}
+
+/* Dock item transition animations */
+.minimized-windows-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dock-item-enter-active,
+.dock-item-leave-active {
+  transition: all 0.3s ease;
+}
+
+.dock-item-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(20px);
+}
+
+.dock-item-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(-20px);
+}
+
+.dock-item-move {
+  transition: transform 0.3s ease;
 }
 
 .dock-item {
