@@ -17,6 +17,7 @@
       zIndex: windowState.zIndex,
       opacity: windowState.isAnimating && windowState.isMinimized ? 0 : 1
     }"
+    @mousedown="handleWindowClick"
   >
     <div 
       class="title-bar"
@@ -313,6 +314,10 @@ function toggleMaximize() {
   
   // Toggle between maximized and restored state
   maximizeWindow(props.windowState.id)
+}
+
+function handleWindowClick(_event) {
+  bringToFront(props.windowState.id)
 }
 </script>
 
