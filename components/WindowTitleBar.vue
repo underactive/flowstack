@@ -12,7 +12,8 @@
     :style="{ 
       transform: windowState.isMaximized ? 'none' : `translate(${windowState.x}px, ${windowState.y}px)`,
       width: windowState.isMaximized ? '100vw' : windowState.width + 'px',
-      height: windowState.isMaximized ? 'calc(100vh - 104px)' : windowState.height + 'px',
+      height: windowState.isMaximized ? getMaximizedHeight() : windowState.height + 'px',
+      top: windowState.isMaximized ? '24px' : '0',
       zIndex: windowState.zIndex,
       opacity: windowState.isAnimating && windowState.isMinimized ? 0 : 1
     }"
@@ -20,6 +21,7 @@
     <div 
       class="title-bar"
       @mousedown="startDrag"
+      @dblclick="toggleMaximize"
     >
       <div class="title-bar-left">
         <div class="window-icon">
@@ -67,6 +69,18 @@ const dragOffset = ref({ x: 0, y: 0 })
 const dragStartPos = ref({ x: 0, y: 0 })
 const resizeStartSize = ref({ width: 0, height: 0 })
 const resizeStartPos = ref({ x: 0, y: 0 })
+
+// Get the actual dock container position to calculate maximized height
+const getMaximizedHeight = () => {
+  const dockContainer = document.querySelector('.dock-container')
+  if (dockContainer) {
+    const dockRect = dockContainer.getBoundingClientRect()
+    const menuBarHeight = 24
+    return `${dockRect.top - menuBarHeight}px`
+  }
+  // Fallback if dock not found
+  return 'calc(100vh - 24px - 80px)'
+}
 
 // Throttle function for performance
 function throttle(func, limit) {
@@ -124,12 +138,28 @@ function onDrag(event) {
   const newX = event.clientX - dragOffset.value.x
   const newY = event.clientY - dragOffset.value.y
   
+  // Get actual menu bar and dock positions
+  const menuBar = document.querySelector('.menu-bar')
+  const dockContainer = document.querySelector('.dock-container')
+  
+  let minY = 0
+  let maxY = window.innerHeight - props.windowState.height
+  
+  if (menuBar) {
+    const menuBarRect = menuBar.getBoundingClientRect()
+    minY = menuBarRect.bottom // Start below the menu bar
+  }
+  
+  if (dockContainer) {
+    const dockRect = dockContainer.getBoundingClientRect()
+    maxY = dockRect.top - props.windowState.height // Stop above the dock
+  }
+  
   // Keep window within viewport bounds
   const maxX = window.innerWidth - props.windowState.width
-  const maxY = window.innerHeight - props.windowState.height
   
   const clampedX = Math.max(0, Math.min(newX, maxX))
-  const clampedY = Math.max(24, Math.min(newY, maxY)) // Account for menu bar
+  const clampedY = Math.max(minY, Math.min(newY, maxY))
   
   // Use throttled update for smooth performance
   throttledUpdatePosition(clampedX, clampedY)
@@ -181,11 +211,33 @@ function onResize(event) {
   const deltaX = event.clientX - resizeStartPos.value.x
   const deltaY = event.clientY - resizeStartPos.value.y
   
+  // Get actual menu bar and dock positions
+  const menuBar = document.querySelector('.menu-bar')
+  const dockContainer = document.querySelector('.dock-container')
+  
+  let maxHeight = window.innerHeight - 40
+  
+  if (menuBar) {
+    const menuBarRect = menuBar.getBoundingClientRect()
+    maxHeight = window.innerHeight - menuBarRect.bottom - 40
+  }
+  
+  if (dockContainer) {
+    const dockRect = dockContainer.getBoundingClientRect()
+    maxHeight = Math.min(maxHeight, dockRect.top - 40)
+  }
+  
   const newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px
   const newHeight = Math.max(300, resizeStartSize.value.height + deltaY) // Min height 300px
   
+  // Ensure window doesn't exceed viewport bounds
+  const maxWidth = window.innerWidth
+  
+  const clampedWidth = Math.min(maxWidth, newWidth)
+  const clampedHeight = Math.min(maxHeight, newHeight)
+  
   // Use smooth update for immediate visual feedback
-  smoothUpdateSize(props.windowState.id, newWidth, newHeight)
+  smoothUpdateSize(props.windowState.id, clampedWidth, clampedHeight)
 }
 
 function stopResize() {
@@ -221,6 +273,21 @@ function minimize() {
 function maximize() {
   maximizeWindow(props.windowState.id)
 }
+
+function toggleMaximize() {
+  // Prevent double-click from triggering drag
+  if (isDragging.value) {
+    isDragging.value = false
+    document.removeEventListener('mousemove', onDrag)
+    document.removeEventListener('mouseup', stopDrag)
+    document.body.style.userSelect = ''
+    document.body.style.cursor = ''
+    return
+  }
+  
+  // Toggle between maximized and restored state
+  maximizeWindow(props.windowState.id)
+}
 </script>
 
 <style scoped>
@@ -245,6 +312,11 @@ function maximize() {
 .window-container.maximized {
   border-radius: 0;
   transform: none !important;
+  border: none;
+  box-shadow: none;
+  top: 24px !important;
+  left: 0 !important;
+  width: 100vw !important;
 }
 
 .window-container.dragging {
@@ -284,6 +356,11 @@ function maximize() {
   cursor: grab;
   user-select: none;
   height: 40px;
+}
+
+.window-container.maximized .title-bar {
+  background: rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .title-bar:active {

@@ -20,9 +20,7 @@
       ></div>
     </div>
 
-    <div v-if="visibleWindows.length === 0" class="no-windows">
-      No windows visible
-    </div>
+
     <WindowTitleBar 
       v-for="window in visibleWindows" 
       :key="window.id"
@@ -89,15 +87,5 @@ const animatingWindowsWithOutlines = computed(() => {
 .window-page-content {
   width: 100%;
   height: 100%;
-}
-
-.no-windows {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 1.2rem;
-  opacity: 0.7;
 }
 </style> 

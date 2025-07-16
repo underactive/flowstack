@@ -53,6 +53,18 @@ export const useWindowManager = () => {
     //     console.error('Failed to load saved windows:', e)
     //   }
     // }
+    
+    // Add window resize listener to ensure windows stay within bounds
+    const handleResize = () => {
+      ensureWindowsInBounds()
+    }
+    
+    window.addEventListener('resize', handleResize)
+    
+    // Cleanup on unmount
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize)
+    })
   })
 
   // Debounce function for localStorage saving
@@ -77,6 +89,117 @@ export const useWindowManager = () => {
     }, 100) // Save after 100ms of no changes
   }, { deep: false }) // Don't use deep watching for better performance
 
+    // Calculate responsive window position that ensures the window is fully visible
+  const calculateResponsivePosition = (
+    desiredX: number | undefined, 
+    desiredY: number | undefined, 
+    width: number, 
+    height: number,
+    windowIndex: number = 0
+  ): { x: number, y: number } => {
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    // Get actual menu bar and dock positions
+    const menuBar = document.querySelector('.menu-bar')
+    const dockContainer = document.querySelector('.dock-container')
+    
+    let minY = 0
+    let maxY = viewportHeight - height
+    
+    if (menuBar) {
+      const menuBarRect = menuBar.getBoundingClientRect()
+      minY = menuBarRect.bottom // Start below the menu bar
+    }
+    
+    if (dockContainer) {
+      const dockRect = dockContainer.getBoundingClientRect()
+      maxY = dockRect.top - height // Stop above the dock
+    }
+    
+    // Calculate maximum allowed position
+    const maxX = viewportWidth - width
+    
+    // Ensure minimum position
+    const minX = 0
+    
+    // Start with desired position or use cascading offset
+    let x: number
+    let y: number
+    
+    // If no specific position provided, use cascading offset
+    if (desiredX === undefined || desiredY === undefined) {
+      const cascadeOffset = 30
+      x = 20 + (windowIndex * cascadeOffset) // Small offset for cascading, but no margin constraint
+      y = minY + (windowIndex * cascadeOffset)
+    } else {
+      x = desiredX
+      y = desiredY
+    }
+    
+    // Ensure window is within bounds
+    x = Math.max(minX, Math.min(maxX, x))
+    y = Math.max(minY, Math.min(maxY, y))
+    
+    return { x, y }
+  }
+
+  // Calculate responsive window size based on screen size
+  const calculateResponsiveSize = (desiredWidth: number | undefined, desiredHeight: number | undefined): { width: number, height: number } => {
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    // Get actual menu bar and dock positions
+    const menuBar = document.querySelector('.menu-bar')
+    const dockContainer = document.querySelector('.dock-container')
+    
+    let maxHeight = viewportHeight - 40
+    
+    if (menuBar) {
+      const menuBarRect = menuBar.getBoundingClientRect()
+      maxHeight = viewportHeight - menuBarRect.bottom - 40
+    }
+    
+    if (dockContainer) {
+      const dockRect = dockContainer.getBoundingClientRect()
+      maxHeight = Math.min(maxHeight, dockRect.top - 40)
+    }
+    
+    // Maximum window size (leave some space for margins)
+    const maxWidth = viewportWidth
+    
+  // Default sizes for different screen sizes
+  let width: number
+  let height: number
+  
+  // If no specific size provided, use responsive defaults
+  if (desiredWidth === undefined || desiredHeight === undefined) {
+    if (viewportWidth < 768) {
+      // Mobile/tablet
+      width = viewportWidth
+      height = Math.min(600, maxHeight)
+    } else if (viewportWidth < 1024) {
+      // Small laptop
+      width = Math.min(700, viewportWidth)
+      height = Math.min(500, maxHeight)
+    } else {
+      // Desktop
+      width = 800
+      height = Math.min(600, maxHeight)
+    }
+  } else {
+    width = desiredWidth
+    height = desiredHeight
+  }
+  
+  // Ensure window size is within bounds
+  width = Math.min(maxWidth, Math.max(300, width))
+  height = Math.min(maxHeight, Math.max(200, height))
+    
+    return { width, height }
+  }
+
   // Smooth resize updates
   const smoothUpdateSize = (windowId: string, width: number, height: number) => {
     // Update immediately for responsive feel
@@ -100,16 +223,30 @@ export const useWindowManager = () => {
       return existingWindow.id
     }
 
+    // Calculate responsive size and position
+    const { width: responsiveWidth, height: responsiveHeight } = calculateResponsiveSize(
+      options.width, 
+      options.height
+    )
+    
+    const { x: responsiveX, y: responsiveY } = calculateResponsivePosition(
+      options.x, 
+      options.y, 
+      responsiveWidth, 
+      responsiveHeight,
+      windows.value.length
+    )
+
     // Create new window
     const windowId = `window-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const newWindow: WindowState = {
       id: windowId,
       title,
       route,
-      x: options.x ?? 100 + (windows.value.length * 50),
-      y: options.y ?? 100 + (windows.value.length * 50),
-      width: options.width ?? 800,
-      height: options.height ?? 600,
+      x: responsiveX,
+      y: responsiveY,
+      width: responsiveWidth,
+      height: responsiveHeight,
       isMinimized: false,
       isMaximized: false,
       zIndex: nextZIndex.value++,
@@ -405,16 +542,45 @@ export const useWindowManager = () => {
   const updateWindowPosition = (windowId: string, x: number, y: number): void => {
     const index = windows.value.findIndex(w => w.id === windowId)
     if (index !== -1) {
-      // Only update if position actually changed
       const currentWindow = windows.value[index]
-      if (currentWindow.x !== x || currentWindow.y !== y) {
+      
+      // Use responsive positioning to ensure window stays within bounds
+      const { x: responsiveX, y: responsiveY } = calculateResponsivePosition(
+        x, 
+        y, 
+        currentWindow.width, 
+        currentWindow.height
+      )
+      
+      // Only update if position actually changed
+      if (currentWindow.x !== responsiveX || currentWindow.y !== responsiveY) {
         // Update properties directly for better performance
-        currentWindow.x = x
-        currentWindow.y = y
+        currentWindow.x = responsiveX
+        currentWindow.y = responsiveY
         // Trigger reactivity by reassigning the array
         windows.value = [...windows.value]
       }
     }
+  }
+
+  // Ensure all windows are within screen bounds (useful for screen resize)
+  const ensureWindowsInBounds = (): void => {
+    windows.value.forEach((window, index) => {
+      const { x: responsiveX, y: responsiveY } = calculateResponsivePosition(
+        window.x, 
+        window.y, 
+        window.width, 
+        window.height
+      )
+      
+      if (window.x !== responsiveX || window.y !== responsiveY) {
+        windows.value[index] = {
+          ...window,
+          x: responsiveX,
+          y: responsiveY
+        }
+      }
+    })
   }
 
   const updateWindowSize = (windowId: string, width: number, height: number): void => {
@@ -455,6 +621,7 @@ export const useWindowManager = () => {
     updateWindowSize,
     getVisibleWindows,
     getWindowByRoute,
-    smoothUpdateSize
+    smoothUpdateSize,
+    ensureWindowsInBounds
   }
 } 

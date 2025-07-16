@@ -97,8 +97,6 @@ onMounted(() => {
   
   // Open home window by default
   openWindow('/', 'Welcome to DXOS', {
-    x: 150,
-    y: 100,
     width: 900,
     height: 700
   })
@@ -131,11 +129,11 @@ function navigateToPage(route) {
   }
   
   const windowSizes = {
-    '/': { width: 900, height: 700, x: 150, y: 100 },
-    '/about': { width: 1000, height: 800, x: 200, y: 150 },
-    '/contact': { width: 1200, height: 900, x: 250, y: 200 },
-    '/projects': { width: 1200, height: 900, x: 300, y: 250 },
-    '/settings': { width: 900, height: 800, x: 350, y: 300 }
+    '/': { width: 900, height: 700 },
+    '/about': { width: 1000, height: 800 },
+    '/contact': { width: 1200, height: 900 },
+    '/projects': { width: 1200, height: 900 },
+    '/settings': { width: 900, height: 800 }
   }
   
   // Check if there's already a minimized window for this route
