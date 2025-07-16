@@ -171,18 +171,18 @@ export const useWindowManager = () => {
       animationOutlines: []
     }
 
-    // Animation duration in milliseconds (System 7 was faster and choppier)
-    const duration = 400
+    // Animation duration in milliseconds (faster for better responsiveness)
+    const duration = 250
     const startTime = Date.now()
     
-    // Number of outline frames to create during animation (fewer for choppier effect)
-    const outlineCount = 8
+    // Number of outline frames to create during animation
+    const outlineCount = 6
     
     const animate = () => {
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
       
-      // System 7 style easing - completely linear, no smoothness
+      // Smooth easing for better feel
       const easeOut = progress
       
       // Calculate current position and size (reverse of minimize)
@@ -191,16 +191,16 @@ export const useWindowManager = () => {
       const currentWidth = 60 + (originalPosition.width - 60) * easeOut // From dock size to original
       const currentHeight = 60 + (originalPosition.height - 60) * easeOut // From dock size to original
 
-      // Create trail of outlines (chunkier, less smooth)
+      // Create trail of outlines
       const outlines = []
       for (let i = 0; i < outlineCount; i++) {
-        const outlineProgress = Math.max(0, easeOut - (i * 0.12)) // Larger gaps between outlines
+        const outlineProgress = Math.max(0, easeOut - (i * 0.15)) // Adjusted gaps
         if (outlineProgress > 0) {
           const outlineX = dockPosition.x + (originalPosition.x - dockPosition.x) * outlineProgress
           const outlineY = dockPosition.y + (originalPosition.y - dockPosition.y) * outlineProgress
           const outlineWidth = 60 + (originalPosition.width - 60) * outlineProgress
           const outlineHeight = 60 + (originalPosition.height - 60) * outlineProgress
-          const outlineOpacity = Math.max(0, 1 - (i * 0.2)) // Faster fade out
+          const outlineOpacity = Math.max(0, 1 - (i * 0.25)) // Faster fade out
           
           outlines.push({
             x: outlineX,
@@ -224,8 +224,8 @@ export const useWindowManager = () => {
       }
 
       if (progress < 1) {
-        // Use setTimeout with a longer interval for choppier animation (System 7 style)
-        setTimeout(animate, 50) // 20fps instead of 60fps
+        // Use requestAnimationFrame for smoother animation
+        requestAnimationFrame(animate)
       } else {
         // Animation complete
         windows.value[index] = {
@@ -238,7 +238,7 @@ export const useWindowManager = () => {
       }
     }
 
-    setTimeout(animate, 50) // Start with choppy timing
+    requestAnimationFrame(animate) // Start with smooth timing
   }
 
   const setDockPosition = (position: { x: number, y: number }) => {
@@ -312,18 +312,18 @@ export const useWindowManager = () => {
       animationOutlines: []
     }
 
-    // Animation duration in milliseconds (System 7 was faster and choppier)
-    const duration = 400
+    // Animation duration in milliseconds (faster for better responsiveness)
+    const duration = 250
     const startTime = Date.now()
     
-    // Number of outline frames to create during animation (fewer for choppier effect)
-    const outlineCount = 8
+    // Number of outline frames to create during animation
+    const outlineCount = 6
     
     const animate = () => {
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
       
-      // System 7 style easing - completely linear, no smoothness
+      // Smooth easing for better feel
       const easeOut = progress
       
       // Calculate current position and size
@@ -332,16 +332,16 @@ export const useWindowManager = () => {
       const currentWidth = originalPosition.width + (60 - originalPosition.width) * easeOut // Dock item width
       const currentHeight = originalPosition.height + (60 - originalPosition.height) * easeOut // Dock item height
 
-      // Create trail of outlines (chunkier, less smooth)
+      // Create trail of outlines
       const outlines = []
       for (let i = 0; i < outlineCount; i++) {
-        const outlineProgress = Math.max(0, easeOut - (i * 0.12)) // Larger gaps between outlines
+        const outlineProgress = Math.max(0, easeOut - (i * 0.15)) // Adjusted gaps
         if (outlineProgress > 0) {
           const outlineX = originalPosition.x + (finalDockPosition.x - originalPosition.x) * outlineProgress
           const outlineY = originalPosition.y + (finalDockPosition.y - originalPosition.y) * outlineProgress
           const outlineWidth = originalPosition.width + (60 - originalPosition.width) * outlineProgress
           const outlineHeight = originalPosition.height + (60 - originalPosition.height) * outlineProgress
-          const outlineOpacity = Math.max(0, 1 - (i * 0.2)) // Faster fade out
+          const outlineOpacity = Math.max(0, 1 - (i * 0.25)) // Faster fade out
           
           outlines.push({
             x: outlineX,
@@ -365,8 +365,8 @@ export const useWindowManager = () => {
       }
 
       if (progress < 1) {
-        // Use setTimeout with a longer interval for choppier animation (System 7 style)
-        setTimeout(animate, 50) // 20fps instead of 60fps
+        // Use requestAnimationFrame for smoother animation
+        requestAnimationFrame(animate)
       } else {
         // Animation complete
         windows.value[index] = {
@@ -379,7 +379,7 @@ export const useWindowManager = () => {
       }
     }
 
-    setTimeout(animate, 50) // Start with choppy timing
+    requestAnimationFrame(animate) // Start with smooth timing
   }
 
   const maximizeWindow = (windowId: string): void => {
