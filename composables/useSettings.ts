@@ -15,7 +15,7 @@ export const useSettings = () => {
     
     // Default settings
     return {
-      theme: 'auto',
+      theme: 'dark',
       background: 'gradient-1',
       dockPosition: 'bottom',
       showClock: true,
@@ -35,7 +35,7 @@ export const useSettings = () => {
   // Reset settings to defaults
   const resetSettings = () => {
     settings.value = {
-      theme: 'auto',
+      theme: 'dark',
       background: 'gradient-1',
       dockPosition: 'bottom',
       showClock: true,
