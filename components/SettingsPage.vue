@@ -135,10 +135,11 @@
 
 <script setup>
 const { theme, setTheme } = useTheme()
+const { background, backgrounds, setBackground } = useBackground()
 
 const settings = ref({
   theme: theme.value,
-  background: 'gradient-1',
+  background: background.value,
   dockPosition: 'bottom',
   showClock: true,
   dockMagnification: true,
@@ -151,9 +152,19 @@ watch(theme, (newTheme) => {
   settings.value.theme = newTheme
 })
 
+// Watch for background changes and update settings
+watch(background, (newBackground) => {
+  settings.value.background = newBackground
+})
+
 // Watch for settings theme changes and update theme
 watch(() => settings.value.theme, (newTheme) => {
   setTheme(newTheme)
+})
+
+// Watch for settings background changes and update background
+watch(() => settings.value.background, (newBackground) => {
+  setBackground(newBackground)
 })
 
 // Load saved settings on mount
@@ -163,22 +174,14 @@ onMounted(() => {
     try {
       const parsedSettings = JSON.parse(savedSettings)
       settings.value = { ...settings.value, ...parsedSettings }
-      // Ensure theme is applied
+      // Ensure theme and background are applied
       setTheme(settings.value.theme)
+      setBackground(settings.value.background)
     } catch (e) {
       console.error('Failed to load saved settings:', e)
     }
   }
 })
-
-const backgrounds = [
-  { id: 'gradient-1', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { id: 'gradient-2', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  { id: 'gradient-3', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  { id: 'gradient-4', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
-  { id: 'gradient-5', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-  { id: 'gradient-6', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }
-]
 
 function saveSettings() {
   // Save settings to localStorage
@@ -197,8 +200,9 @@ function resetSettings() {
     notifications: true,
     soundEffects: false
   }
-  // Reset theme to auto
+  // Reset theme and background to defaults
   setTheme('auto')
+  setBackground('gradient-1')
   alert('Settings reset to defaults!')
 }
 </script>

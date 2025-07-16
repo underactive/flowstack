@@ -79,6 +79,7 @@
 const currentTime = ref('')
 const windowManager = useWindowManager()
 const { openWindow, windows, restoreWindow } = windowManager
+const { currentBackground } = useBackground()
 
 
 // Get minimized windows
@@ -152,11 +153,12 @@ function navigateToPage(route) {
 <style scoped>
 .macos-desktop {
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: v-bind(currentBackground);
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
+  transition: background 0.3s ease;
 }
 
 /* Menu Bar */
