@@ -63,6 +63,8 @@ const props = defineProps({
 })
 
 const { minimizeWindowWithAnimation, maximizeWindow, closeWindow, bringToFront, updateWindowPosition, smoothUpdateSize } = useWindowManager()
+const { settings } = useSettings()
+const { isDockVisible } = useDockAutoHide()
 
 const isDragging = ref(false)
 const isResizing = ref(false)
@@ -79,9 +81,6 @@ const getMaximizedHeight = () => {
     const menuBarHeight = 24
     
     // Check if dock is auto-hidden
-    const { settings } = useSettings()
-    const { isDockVisible } = useDockAutoHide()
-    
     if (!settings.value.autoHideDock || isDockVisible.value) {
       return `${dockRect.top - menuBarHeight}px`
     } else {
@@ -164,9 +163,6 @@ function onDrag(event) {
   if (dockContainer) {
     const dockRect = dockContainer.getBoundingClientRect()
     // Check if dock is auto-hidden
-    const { settings } = useSettings()
-    const { isDockVisible } = useDockAutoHide()
-    
     if (!settings.value.autoHideDock || isDockVisible.value) {
       maxY = dockRect.top - props.windowState.height // Stop above the dock
     } else {
@@ -245,9 +241,6 @@ function onResize(event) {
   if (dockContainer) {
     const dockRect = dockContainer.getBoundingClientRect()
     // Check if dock is auto-hidden
-    const { settings } = useSettings()
-    const { isDockVisible } = useDockAutoHide()
-    
     if (!settings.value.autoHideDock || isDockVisible.value) {
       maxHeight = Math.min(maxHeight, dockRect.top - 40)
     }
