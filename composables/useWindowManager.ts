@@ -37,6 +37,10 @@ export const useWindowManager = () => {
   const nextZIndex = useState<number>('dxos-next-z-index', () => 1000)
   const dockPosition = useState<{ x: number, y: number }>('dxos-dock-position', () => ({ x: 0, y: 0 }))
   
+  // Move composable calls to top level to avoid lifecycle warnings
+  const { settings } = useSettings()
+  const { isDockVisible } = useDockAutoHide()
+  
   // Z-index management constants
   const MAX_Z_INDEX = 9999 // Maximum z-index before reset
   const BASE_Z_INDEX = 1000 // Starting z-index
@@ -148,9 +152,6 @@ export const useWindowManager = () => {
     if (dockContainer) {
       const dockRect = dockContainer.getBoundingClientRect()
       // Check if dock is auto-hidden
-      const { settings } = useSettings()
-      const { isDockVisible } = useDockAutoHide()
-      
       if (!settings.value.autoHideDock || isDockVisible.value) {
         maxY = dockRect.top - height // Stop above the dock
       } else {
@@ -205,9 +206,6 @@ export const useWindowManager = () => {
     if (dockContainer) {
       const dockRect = dockContainer.getBoundingClientRect()
       // Check if dock is auto-hidden
-      const { settings } = useSettings()
-      const { isDockVisible } = useDockAutoHide()
-      
       if (!settings.value.autoHideDock || isDockVisible.value) {
         maxHeight = Math.min(maxHeight, dockRect.top - 40)
       }
