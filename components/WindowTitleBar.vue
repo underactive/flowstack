@@ -34,7 +34,11 @@
         <button class="title-bar-btn minimize" @click="minimize">
           <UIcon name="i-heroicons-minus" class="btn-icon" />
         </button>
-        <button class="title-bar-btn maximize" @click="maximize">
+        <button 
+          v-if="!(windowState.fixedWidth && windowState.fixedHeight)"
+          class="title-bar-btn maximize" 
+          @click="maximize"
+        >
           <UIcon :name="windowState.isMaximized ? 'i-heroicons-arrows-pointing-in' : 'i-heroicons-arrows-pointing-out'" class="btn-icon" />
         </button>
         <button class="title-bar-btn close" @click="close">
@@ -47,7 +51,7 @@
     </div>
     <!-- Custom resize handle -->
     <div 
-      v-if="!windowState.isMaximized"
+      v-if="!windowState.isMaximized && windowState.isResizable !== false"
       class="resize-handle"
       @mousedown="startResize"
     ></div>
@@ -194,6 +198,12 @@ function stopDrag() {
 function startResize(event) {
   if (props.windowState.isMaximized) return
   
+  // Prevent resizing if window is not resizable or has fixed dimensions
+  if (props.windowState.isResizable === false || 
+      (props.windowState.fixedWidth && props.windowState.fixedHeight)) {
+    return
+  }
+  
   event.preventDefault()
   event.stopPropagation()
   
@@ -247,14 +257,28 @@ function onResize(event) {
     // If dock is auto-hidden, don't limit height
   }
   
-  const newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px
-  const newHeight = Math.max(300, resizeStartSize.value.height + deltaY) // Min height 300px
+  // Handle fixed dimensions
+  let newWidth, newHeight
+  
+  if (props.windowState.fixedWidth) {
+    // Keep fixed width unchanged
+    newWidth = props.windowState.fixedWidth
+  } else {
+    newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px
+  }
+  
+  if (props.windowState.fixedHeight) {
+    // Keep fixed height unchanged
+    newHeight = props.windowState.fixedHeight
+  } else {
+    newHeight = Math.max(300, resizeStartSize.value.height + deltaY) // Min height 300px
+  }
   
   // Ensure window doesn't exceed viewport bounds
   const maxWidth = window.innerWidth
   
-  const clampedWidth = Math.min(maxWidth, newWidth)
-  const clampedHeight = Math.min(maxHeight, newHeight)
+  const clampedWidth = props.windowState.fixedWidth ? newWidth : Math.min(maxWidth, newWidth)
+  const clampedHeight = props.windowState.fixedHeight ? newHeight : Math.min(maxHeight, newHeight)
   
   // Use smooth update for immediate visual feedback
   smoothUpdateSize(props.windowState.id, clampedWidth, clampedHeight)
@@ -291,6 +315,10 @@ function minimize() {
 }
 
 function maximize() {
+  // Prevent maximizing windows with fixed dimensions
+  if (props.windowState.fixedWidth && props.windowState.fixedHeight) {
+    return
+  }
   maximizeWindow(props.windowState.id)
 }
 
@@ -302,6 +330,11 @@ function toggleMaximize() {
     document.removeEventListener('mouseup', stopDrag)
     document.body.style.userSelect = ''
     document.body.style.cursor = ''
+    return
+  }
+  
+  // Prevent maximizing windows with fixed dimensions
+  if (props.windowState.fixedWidth && props.windowState.fixedHeight) {
     return
   }
   

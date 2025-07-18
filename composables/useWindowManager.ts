@@ -22,6 +22,10 @@ interface WindowState {
   }>
   originalPosition?: { x: number, y: number, width: number, height: number }
   dockPosition?: { x: number, y: number }
+  // Fixed size and resizing properties
+  isResizable?: boolean
+  fixedWidth?: number
+  fixedHeight?: number
 }
 
 interface WindowOptions {
@@ -29,6 +33,9 @@ interface WindowOptions {
   y?: number
   width?: number
   height?: number
+  isResizable?: boolean
+  fixedWidth?: number
+  fixedHeight?: number
 }
 
 export const useWindowManager = () => {
@@ -259,27 +266,59 @@ export const useWindowManager = () => {
       // If window exists, bring it to front and make it visible
       const index = windows.value.findIndex(w => w.id === existingWindow.id)
       if (index !== -1) {
+        // Determine new size if options are provided
+        let newWidth = existingWindow.width
+        let newHeight = existingWindow.height
+        
+        if (options.fixedWidth !== undefined && options.fixedHeight !== undefined) {
+          // Use fixed dimensions when specified
+          newWidth = options.fixedWidth
+          newHeight = options.fixedHeight
+        } else if (options.width !== undefined && options.height !== undefined) {
+          // Use provided dimensions
+          newWidth = options.width
+          newHeight = options.height
+        }
+        
         windows.value[index] = {
           ...windows.value[index],
           isVisible: true,
           isMinimized: false,
-          zIndex: getNextZIndex()
+          zIndex: getNextZIndex(),
+          width: newWidth,
+          height: newHeight,
+          // Update resizing properties if provided
+          isResizable: options.isResizable !== undefined ? options.isResizable : windows.value[index].isResizable,
+          fixedWidth: options.fixedWidth !== undefined ? options.fixedWidth : windows.value[index].fixedWidth,
+          fixedHeight: options.fixedHeight !== undefined ? options.fixedHeight : windows.value[index].fixedHeight
         }
       }
       return existingWindow.id
     }
 
-    // Calculate responsive size and position
-    const { width: responsiveWidth, height: responsiveHeight } = calculateResponsiveSize(
-      options.width, 
-      options.height
-    )
+    // Determine final width and height based on fixed size options
+    let finalWidth: number
+    let finalHeight: number
+    
+    if (options.fixedWidth !== undefined && options.fixedHeight !== undefined) {
+      // Use fixed dimensions when specified
+      finalWidth = options.fixedWidth
+      finalHeight = options.fixedHeight
+    } else {
+      // Calculate responsive size and position
+      const { width: responsiveWidth, height: responsiveHeight } = calculateResponsiveSize(
+        options.width, 
+        options.height
+      )
+      finalWidth = responsiveWidth
+      finalHeight = responsiveHeight
+    }
     
     const { x: responsiveX, y: responsiveY } = calculateResponsivePosition(
       options.x, 
       options.y, 
-      responsiveWidth, 
-      responsiveHeight,
+      finalWidth, 
+      finalHeight,
       windows.value.length
     )
 
@@ -291,12 +330,16 @@ export const useWindowManager = () => {
       route,
       x: responsiveX,
       y: responsiveY,
-      width: responsiveWidth,
-      height: responsiveHeight,
+      width: finalWidth,
+      height: finalHeight,
       isMinimized: false,
       isMaximized: false,
       zIndex: getNextZIndex(),
-      isVisible: true
+      isVisible: true,
+      // Set resizing properties
+      isResizable: options.isResizable !== undefined ? options.isResizable : true, // Default to resizable
+      fixedWidth: options.fixedWidth,
+      fixedHeight: options.fixedHeight
     }
 
     windows.value.push(newWindow)

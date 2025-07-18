@@ -40,7 +40,6 @@
   padding: 40px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  max-width: 600px;
   width: 100%;
 }
 

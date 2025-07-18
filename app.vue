@@ -103,11 +103,9 @@ onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
   
-  // Open home window by default
-  openWindow('/', 'Welcome to DXOS', {
-    width: 900,
-    height: 700
-  })
+  // Open home window by default using windowSizes configuration
+  const homeWindowOptions = windowSizes['/']
+  openWindow('/', 'Welcome to DXOS', homeWindowOptions)
 })
 
 function updateTime() {
@@ -127,22 +125,23 @@ const dockItems = [
   { label: 'Settings', icon: 'i-heroicons-cog-6-tooth', route: '/settings' }
 ]
 
+const windowTitles = {
+  '/': 'Welcome to DXOS',
+  '/about': 'About DXOS',
+  '/contact': 'Contact Us',
+  '/projects': 'Projects',
+  '/settings': 'Settings'
+}
+
+const windowSizes = {
+  '/': { width: 800, height: 600, isResizable: false },
+  '/about': { width: 1024, height: 768 },
+  '/contact': { width: 1200, height: 900 },
+  '/projects': { width: 1200, height: 900 },
+  '/settings': { width: 900, height: 768 }
+}
+
 function navigateToPage(route) {
-  const windowTitles = {
-    '/': 'Welcome to DXOS',
-    '/about': 'About DXOS',
-    '/contact': 'Contact Us',
-    '/projects': 'Projects',
-    '/settings': 'Settings'
-  }
-  
-  const windowSizes = {
-    '/': { width: 900, height: 700 },
-    '/about': { width: 1000, height: 800 },
-    '/contact': { width: 1200, height: 900 },
-    '/projects': { width: 1200, height: 900 },
-    '/settings': { width: 900, height: 800 }
-  }
   
   // Check if there's already a minimized window for this route
   const existingMinimizedWindow = windows.value.find(w => w.route === route && w.isMinimized)
