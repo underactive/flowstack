@@ -2,6 +2,7 @@
   <div class="video-container">
     <div class="player-wrapper">
       <div id="youtube-player" class="youtube-player"/>
+      <img src="/images/player/player_logo.svg" alt="Player Logo" class="player-logo" />
       <div v-if="showStatic" class="tv-static"/>
       <div class="crt-overlay"/>
     </div>
@@ -219,6 +220,18 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.player-logo {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 72px;
+  height: auto;
+  z-index: 500; /* Above video, below static overlay */
+  opacity: 0.8;
+  pointer-events: none;
+  mix-blend-mode: multiply; /* Makes white background transparent, keeps black visible */
 }
 
 /* Responsive design */
