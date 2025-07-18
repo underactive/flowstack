@@ -153,7 +153,7 @@ export const useWindowManager = () => {
     
     if (menuBar) {
       const menuBarRect = menuBar.getBoundingClientRect()
-      minY = menuBarRect.bottom // Start below the menu bar
+      minY = menuBarRect.bottom + 8 // Start below the menu bar with 8px spacing
     }
     
     if (dockContainer) {
@@ -207,7 +207,7 @@ export const useWindowManager = () => {
     
     if (menuBar) {
       const menuBarRect = menuBar.getBoundingClientRect()
-      maxHeight = viewportHeight - menuBarRect.bottom - 40
+      maxHeight = viewportHeight - menuBarRect.bottom - 8 - 40 // Account for 8px spacing
     }
     
     if (dockContainer) {

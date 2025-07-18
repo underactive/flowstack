@@ -161,7 +161,7 @@ function onDrag(event) {
   
   if (menuBar) {
     const menuBarRect = menuBar.getBoundingClientRect()
-    minY = menuBarRect.bottom // Start below the menu bar
+    minY = menuBarRect.bottom + 8 // Start below the menu bar with 8px spacing
   }
   
   if (dockContainer) {
@@ -245,7 +245,7 @@ function onResize(event) {
   
   if (menuBar) {
     const menuBarRect = menuBar.getBoundingClientRect()
-    maxHeight = window.innerHeight - menuBarRect.bottom - 40
+    maxHeight = window.innerHeight - menuBarRect.bottom - 8 - 40 // Account for 8px spacing
   }
   
   if (dockContainer) {
