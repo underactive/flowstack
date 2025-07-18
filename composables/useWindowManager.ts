@@ -48,6 +48,51 @@ export const useWindowManager = () => {
   const { settings } = useSettings()
   const { isDockVisible } = useDockAutoHide()
   
+  // Utility functions for window positioning calculations
+  const getViewportBounds = (windowWidth: number, windowHeight: number) => {
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    // Get actual menu bar and dock positions
+    const menuBar = document.querySelector('.menu-bar')
+    const dockContainer = document.querySelector('.dock-container')
+    
+    let minY = 0
+    let maxY = viewportHeight - windowHeight
+    let maxHeight = viewportHeight - 40
+    
+    // Calculate Y bounds based on menu bar
+    if (menuBar) {
+      const menuBarRect = menuBar.getBoundingClientRect()
+      minY = menuBarRect.bottom + 8 // Start below the menu bar with 8px spacing
+      maxHeight = viewportHeight - menuBarRect.bottom - 8 - 40 // Account for 8px spacing
+    }
+    
+    // Calculate Y bounds based on dock
+    if (dockContainer) {
+      const dockRect = dockContainer.getBoundingClientRect()
+      // Check if dock is auto-hidden
+      if (!settings.value.autoHideDock || isDockVisible.value) {
+        maxY = dockRect.top - windowHeight // Stop above the dock
+        maxHeight = Math.min(maxHeight, dockRect.top - 40)
+      } else {
+        // If dock is auto-hidden, allow windows to go to bottom of screen
+        maxY = viewportHeight - windowHeight
+      }
+    }
+    
+    return {
+      minX: 0,
+      maxX: viewportWidth - windowWidth,
+      minY,
+      maxY,
+      maxWidth: viewportWidth,
+      maxHeight,
+      viewportWidth,
+      viewportHeight
+    }
+  }
+  
   // Z-index management constants
   const MAX_Z_INDEX = 9999 // Maximum z-index before reset
   const BASE_Z_INDEX = 1000 // Starting z-index
@@ -140,38 +185,7 @@ export const useWindowManager = () => {
     height: number,
     windowIndex: number = 0
   ): { x: number, y: number } => {
-    // Get viewport dimensions
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    
-    // Get actual menu bar and dock positions
-    const menuBar = document.querySelector('.menu-bar')
-    const dockContainer = document.querySelector('.dock-container')
-    
-    let minY = 0
-    let maxY = viewportHeight - height
-    
-    if (menuBar) {
-      const menuBarRect = menuBar.getBoundingClientRect()
-      minY = menuBarRect.bottom + 8 // Start below the menu bar with 8px spacing
-    }
-    
-    if (dockContainer) {
-      const dockRect = dockContainer.getBoundingClientRect()
-      // Check if dock is auto-hidden
-      if (!settings.value.autoHideDock || isDockVisible.value) {
-        maxY = dockRect.top - height // Stop above the dock
-      } else {
-        // If dock is auto-hidden, allow windows to go to bottom of screen
-        maxY = viewportHeight - height
-      }
-    }
-    
-    // Calculate maximum allowed position
-    const maxX = viewportWidth - width
-    
-    // Ensure minimum position
-    const minX = 0
+    const bounds = getViewportBounds(width, height)
     
     // Start with desired position or use cascading offset
     let x: number
@@ -181,74 +195,54 @@ export const useWindowManager = () => {
     if (desiredX === undefined || desiredY === undefined) {
       const cascadeOffset = 30
       x = 20 + (windowIndex * cascadeOffset) // Small offset for cascading, but no margin constraint
-      y = minY + (windowIndex * cascadeOffset)
+      y = bounds.minY + (windowIndex * cascadeOffset)
     } else {
       x = desiredX
       y = desiredY
     }
     
     // Ensure window is within bounds
-    x = Math.max(minX, Math.min(maxX, x))
-    y = Math.max(minY, Math.min(maxY, y))
+    x = Math.max(bounds.minX, Math.min(bounds.maxX, x))
+    y = Math.max(bounds.minY, Math.min(bounds.maxY, y))
     
     return { x, y }
   }
 
   // Calculate responsive window size based on screen size
   const calculateResponsiveSize = (desiredWidth: number | undefined, desiredHeight: number | undefined): { width: number, height: number } => {
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
+    // Use estimated size for bounds calculation, will be refined below
+    const estimatedSize = getViewportBounds(800, 600)
     
-    // Get actual menu bar and dock positions
-    const menuBar = document.querySelector('.menu-bar')
-    const dockContainer = document.querySelector('.dock-container')
+    // Default sizes for different screen sizes
+    let width: number
+    let height: number
     
-    let maxHeight = viewportHeight - 40
-    
-    if (menuBar) {
-      const menuBarRect = menuBar.getBoundingClientRect()
-      maxHeight = viewportHeight - menuBarRect.bottom - 8 - 40 // Account for 8px spacing
-    }
-    
-    if (dockContainer) {
-      const dockRect = dockContainer.getBoundingClientRect()
-      // Check if dock is auto-hidden
-      if (!settings.value.autoHideDock || isDockVisible.value) {
-        maxHeight = Math.min(maxHeight, dockRect.top - 40)
+    // If no specific size provided, use responsive defaults
+    if (desiredWidth === undefined || desiredHeight === undefined) {
+      if (estimatedSize.viewportWidth < 768) {
+        // Mobile/tablet
+        width = estimatedSize.viewportWidth
+        height = Math.min(600, estimatedSize.maxHeight)
+      } else if (estimatedSize.viewportWidth < 1024) {
+        // Small laptop
+        width = Math.min(700, estimatedSize.viewportWidth)
+        height = Math.min(500, estimatedSize.maxHeight)
+      } else {
+        // Desktop
+        width = 800
+        height = Math.min(600, estimatedSize.maxHeight)
       }
-      // If dock is auto-hidden, don't limit height
-    }
-    
-    // Maximum window size (leave some space for margins)
-    const maxWidth = viewportWidth
-    
-  // Default sizes for different screen sizes
-  let width: number
-  let height: number
-  
-  // If no specific size provided, use responsive defaults
-  if (desiredWidth === undefined || desiredHeight === undefined) {
-    if (viewportWidth < 768) {
-      // Mobile/tablet
-      width = viewportWidth
-      height = Math.min(600, maxHeight)
-    } else if (viewportWidth < 1024) {
-      // Small laptop
-      width = Math.min(700, viewportWidth)
-      height = Math.min(500, maxHeight)
     } else {
-      // Desktop
-      width = 800
-      height = Math.min(600, maxHeight)
+      width = desiredWidth
+      height = desiredHeight
     }
-  } else {
-    width = desiredWidth
-    height = desiredHeight
-  }
-  
-  // Ensure window size is within bounds
-  width = Math.min(maxWidth, Math.max(300, width))
-  height = Math.min(maxHeight, Math.max(200, height))
+    
+    // Get accurate bounds with final dimensions
+    const finalBounds = getViewportBounds(width, height)
+    
+    // Ensure window size is within bounds
+    width = Math.min(finalBounds.maxWidth, Math.max(300, width))
+    height = Math.min(finalBounds.maxHeight, Math.max(200, height))
     
     return { width, height }
   }
@@ -713,6 +707,8 @@ export const useWindowManager = () => {
     getVisibleWindows,
     getWindowByRoute,
     smoothUpdateSize,
-    ensureWindowsInBounds
+    ensureWindowsInBounds,
+    // Utility functions
+    getViewportBounds
   }
 } 
