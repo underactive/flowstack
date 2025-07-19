@@ -197,10 +197,10 @@ onUnmounted(() => {
 
 <style scoped>
 .video-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .player-wrapper {

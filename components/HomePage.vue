@@ -11,7 +11,6 @@ import VideoPlayer from './video/VideoPlayer.vue'
 <style scoped>
 .home-page {
   min-height: 100%;
-  padding: 20px;
 }
 
 .welcome-card {

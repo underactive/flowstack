@@ -489,7 +489,6 @@ function handleWindowClick(_event) {
 .window-content {
   height: calc(100% - 40px);
   overflow: auto;
-  padding: 20px;
 }
 
 /* Custom scrollbar for window content */

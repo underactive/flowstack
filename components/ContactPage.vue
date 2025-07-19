@@ -123,7 +123,7 @@ function submitForm() {
   justify-content: center;
   align-items: flex-start;
   min-height: 100%;
-  padding: 20px;
+  padding: 40px 20px 20px 20px;
 }
 
 .contact-container {
