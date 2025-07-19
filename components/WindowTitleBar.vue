@@ -34,7 +34,11 @@
         <button class="title-bar-btn minimize" @click="minimize">
           <UIcon name="i-heroicons-minus" class="btn-icon" />
         </button>
-        <button class="title-bar-btn maximize" @click="maximize">
+        <button 
+          v-if="!(windowState.fixedWidth && windowState.fixedHeight)"
+          class="title-bar-btn maximize" 
+          @click="maximize"
+        >
           <UIcon :name="windowState.isMaximized ? 'i-heroicons-arrows-pointing-in' : 'i-heroicons-arrows-pointing-out'" class="btn-icon" />
         </button>
         <button class="title-bar-btn close" @click="close">
@@ -47,7 +51,7 @@
     </div>
     <!-- Custom resize handle -->
     <div 
-      v-if="!windowState.isMaximized"
+      v-if="!windowState.isMaximized && windowState.isResizable !== false"
       class="resize-handle"
       @mousedown="startResize"
     ></div>
@@ -62,7 +66,7 @@ const props = defineProps({
   }
 })
 
-const { minimizeWindowWithAnimation, maximizeWindow, closeWindow, bringToFront, updateWindowPosition, smoothUpdateSize } = useWindowManager()
+const { minimizeWindowWithAnimation, maximizeWindow, closeWindow, bringToFront, updateWindowPosition, smoothUpdateSize, getViewportBounds } = useWindowManager()
 const { settings } = useSettings()
 const { isDockVisible } = useDockAutoHide()
 
@@ -148,34 +152,11 @@ function onDrag(event) {
   const newX = event.clientX - dragOffset.value.x
   const newY = event.clientY - dragOffset.value.y
   
-  // Get actual menu bar and dock positions
-  const menuBar = document.querySelector('.menu-bar')
-  const dockContainer = document.querySelector('.dock-container')
+  // Get viewport bounds using the utility function
+  const bounds = getViewportBounds(props.windowState.width, props.windowState.height)
   
-  let minY = 0
-  let maxY = window.innerHeight - props.windowState.height
-  
-  if (menuBar) {
-    const menuBarRect = menuBar.getBoundingClientRect()
-    minY = menuBarRect.bottom // Start below the menu bar
-  }
-  
-  if (dockContainer) {
-    const dockRect = dockContainer.getBoundingClientRect()
-    // Check if dock is auto-hidden
-    if (!settings.value.autoHideDock || isDockVisible.value) {
-      maxY = dockRect.top - props.windowState.height // Stop above the dock
-    } else {
-      // If dock is auto-hidden, allow windows to go to bottom of screen
-      maxY = window.innerHeight - props.windowState.height
-    }
-  }
-  
-  // Keep window within viewport bounds
-  const maxX = window.innerWidth - props.windowState.width
-  
-  const clampedX = Math.max(0, Math.min(newX, maxX))
-  const clampedY = Math.max(minY, Math.min(newY, maxY))
+  const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, newX))
+  const clampedY = Math.max(bounds.minY, Math.min(bounds.maxY, newY))
   
   // Use throttled update for smooth performance
   throttledUpdatePosition(clampedX, clampedY)
@@ -193,6 +174,12 @@ function stopDrag() {
 
 function startResize(event) {
   if (props.windowState.isMaximized) return
+  
+  // Prevent resizing if window is not resizable or has fixed dimensions
+  if (props.windowState.isResizable === false || 
+      (props.windowState.fixedWidth && props.windowState.fixedHeight)) {
+    return
+  }
   
   event.preventDefault()
   event.stopPropagation()
@@ -227,34 +214,28 @@ function onResize(event) {
   const deltaX = event.clientX - resizeStartPos.value.x
   const deltaY = event.clientY - resizeStartPos.value.y
   
-  // Get actual menu bar and dock positions
-  const menuBar = document.querySelector('.menu-bar')
-  const dockContainer = document.querySelector('.dock-container')
+  // Handle fixed dimensions
+  let newWidth, newHeight
   
-  let maxHeight = window.innerHeight - 40
-  
-  if (menuBar) {
-    const menuBarRect = menuBar.getBoundingClientRect()
-    maxHeight = window.innerHeight - menuBarRect.bottom - 40
+  if (props.windowState.fixedWidth) {
+    // Keep fixed width unchanged
+    newWidth = props.windowState.fixedWidth
+  } else {
+    newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px
   }
   
-  if (dockContainer) {
-    const dockRect = dockContainer.getBoundingClientRect()
-    // Check if dock is auto-hidden
-    if (!settings.value.autoHideDock || isDockVisible.value) {
-      maxHeight = Math.min(maxHeight, dockRect.top - 40)
-    }
-    // If dock is auto-hidden, don't limit height
+  if (props.windowState.fixedHeight) {
+    // Keep fixed height unchanged
+    newHeight = props.windowState.fixedHeight
+  } else {
+    newHeight = Math.max(300, resizeStartSize.value.height + deltaY) // Min height 300px
   }
   
-  const newWidth = Math.max(400, resizeStartSize.value.width + deltaX) // Min width 400px
-  const newHeight = Math.max(300, resizeStartSize.value.height + deltaY) // Min height 300px
+  // Get viewport bounds using the utility function
+  const bounds = getViewportBounds(newWidth, newHeight)
   
-  // Ensure window doesn't exceed viewport bounds
-  const maxWidth = window.innerWidth
-  
-  const clampedWidth = Math.min(maxWidth, newWidth)
-  const clampedHeight = Math.min(maxHeight, newHeight)
+  const clampedWidth = props.windowState.fixedWidth ? newWidth : Math.min(bounds.maxWidth, newWidth)
+  const clampedHeight = props.windowState.fixedHeight ? newHeight : Math.min(bounds.maxHeight, newHeight)
   
   // Use smooth update for immediate visual feedback
   smoothUpdateSize(props.windowState.id, clampedWidth, clampedHeight)
@@ -291,6 +272,10 @@ function minimize() {
 }
 
 function maximize() {
+  // Prevent maximizing windows with fixed dimensions
+  if (props.windowState.fixedWidth && props.windowState.fixedHeight) {
+    return
+  }
   maximizeWindow(props.windowState.id)
 }
 
@@ -302,6 +287,11 @@ function toggleMaximize() {
     document.removeEventListener('mouseup', stopDrag)
     document.body.style.userSelect = ''
     document.body.style.cursor = ''
+    return
+  }
+  
+  // Prevent maximizing windows with fixed dimensions
+  if (props.windowState.fixedWidth && props.windowState.fixedHeight) {
     return
   }
   
