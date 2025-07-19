@@ -1,5 +1,5 @@
 <template>
-  <div class="window-manager">
+  <div class="window-canvas">
     <!-- System 7 Animation Outlines -->
     <div 
       v-for="window in animatingWindowsWithOutlines" 
@@ -27,11 +27,11 @@
       :window-state="window"
     >
       <div class="window-page-content">
-        <HomePage v-if="window.route === '/'" />
-        <AboutPage v-else-if="window.route === '/about'" />
-        <ContactPage v-else-if="window.route === '/contact'" />
-        <ProjectsPage v-else-if="window.route === '/projects'" />
-        <SettingsPage v-else-if="window.route === '/settings'" />
+        <WindowsHome v-if="window.route === '/'" />
+        <WindowsAbout v-else-if="window.route === '/about'" />
+        <WindowsContact v-else-if="window.route === '/contact'" />
+        <WindowsProjects v-else-if="window.route === '/projects'" />
+        <WindowsSettings v-else-if="window.route === '/settings'" />
       </div>
     </WindowTitleBar>
   </div>
@@ -53,7 +53,7 @@ const animatingWindowsWithOutlines = computed(() => {
 </script>
 
 <style scoped>
-.window-manager {
+.window-canvas {
   position: relative;
   width: 100%;
   height: 100%;

@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import VideoPlayer from './video/VideoPlayer.vue'
+import VideoPlayer from './components/VideoPlayer.vue'
 </script>
 
 <style scoped>

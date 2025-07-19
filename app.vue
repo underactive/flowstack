@@ -30,7 +30,7 @@
 
     <!-- Desktop Content -->
     <div class="desktop-content">
-      <WindowManager />
+      <WindowCanvas />
     </div>
 
     <!-- Dock -->
