@@ -7,10 +7,35 @@
       <div class="crt-overlay"/>
     </div>
   </div>
+  
+  <!-- Control Bar -->
+  <div class="control-bar">
+    <button class="nav-button" @click="previousVideo" title="Previous Video">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M7 2L3 5L7 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    
+    <button class="nav-button" @click="nextVideo" title="Next Video">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M3 2L7 5L3 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    
+    <div class="info-display">
+      {{ showStatic ? 'tuning in...' : fakeFilename }}
+    </div>
+    
+    <button class="fullscreen-button" @click="toggleFullscreen" title="Toggle Fullscreen">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M2.5 1H1V2.5M8.5 1H10V2.5M10 7.5V9H8.5M1 7.5V9H2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 
 // YouTube video playlist with start times (in seconds)
 const videoPlaylist = [
@@ -24,10 +49,31 @@ const videoPlaylist = [
 let player = null
 const showStatic = ref(true)
 const currentVideoIndex = ref(0)
+const currentVideoTitle = ref('Loading...')
 
 // Duration constants (in milliseconds)
-const VIDEO_DURATION = 12000 // 12 seconds
-const STATIC_DURATION = 4500 // 4 seconds
+const VIDEO_DURATION = 25000 // 25 seconds
+const STATIC_DURATION = 4000 // 5 seconds
+
+// Video file extensions for fake filename
+const videoExtensions = ['.mov', '.mp4', '.avi', '.mkv', '.webm', '.qt', '.wmv', '.m4v', '.mpeg']
+
+// Computed property to create fake unix-style filename
+const fakeFilename = computed(() => {
+  // Take first 4 words, convert to lowercase, replace spaces with underscores
+  const words = currentVideoTitle.value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
+    .split(/\s+/) // Split on whitespace
+    .filter(word => word.length > 0) // Remove empty strings
+    .slice(0, 4) // Take first 4 words
+    .join('_') // Join with underscores
+  
+  // Get random video extension
+  const randomExtension = videoExtensions[Math.floor(Math.random() * videoExtensions.length)]
+  
+  return `${words}${randomExtension}`
+})
 
 // Load YouTube IFrame API
 const loadYouTubeAPI = () => {
@@ -79,6 +125,10 @@ const initPlayer = async () => {
         hideYouTubeOverlays()
         // Start the video cycling timer
         startVideoCycle()
+        // Update video title when player is ready (with delay to ensure video data is loaded)
+        setTimeout(() => {
+          updateVideoTitle()
+        }, 1000)
       },
       onStateChange: (event) => {
         // Handle player state changes
@@ -140,10 +190,138 @@ const cycleToNextVideo = () => {
     // Hide static after video loads and resume timer
     setTimeout(() => {
       showStatic.value = false
+      // Update video title immediately when static disappears
+      updateVideoTitle()
       // Resume the cycle timer after static disappears
       resumeVideoCycle()
     }, STATIC_DURATION)
   }, 100) // Small delay to ensure static shows first
+}
+
+// Manual navigation functions
+const nextVideo = () => {
+  // Pause auto-cycling temporarily
+  pauseVideoCycle()
+  
+  // Show static overlay
+  showStatic.value = true
+  
+  setTimeout(() => {
+    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.length
+    const currentVideo = videoPlaylist[currentVideoIndex.value]
+    
+    console.log(`Manual next: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    
+    if (player && player.loadVideoById) {
+      player.loadVideoById({
+        videoId: currentVideo.id,
+        startSeconds: currentVideo.startTime
+      })
+    }
+    
+    setTimeout(() => {
+      showStatic.value = false
+      // Update video title immediately when static disappears
+      updateVideoTitle()
+      // Resume auto-cycling
+      resumeVideoCycle()
+    }, STATIC_DURATION)
+  }, 100)
+}
+
+const previousVideo = () => {
+  // Pause auto-cycling temporarily
+  pauseVideoCycle()
+  
+  // Show static overlay
+  showStatic.value = true
+  
+  setTimeout(() => {
+    // Go to previous video with wrap-around (if at 0, go to last video)
+    currentVideoIndex.value = currentVideoIndex.value === 0 
+      ? videoPlaylist.length - 1 
+      : currentVideoIndex.value - 1
+    
+    const currentVideo = videoPlaylist[currentVideoIndex.value]
+    
+    console.log(`Manual previous: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    
+    if (player && player.loadVideoById) {
+      player.loadVideoById({
+        videoId: currentVideo.id,
+        startSeconds: currentVideo.startTime
+      })
+    }
+    
+    setTimeout(() => {
+      showStatic.value = false
+      // Update video title immediately when static disappears
+      updateVideoTitle()
+      // Resume auto-cycling
+      resumeVideoCycle()
+    }, STATIC_DURATION)
+  }, 100)
+}
+
+// Fullscreen functionality
+const toggleFullscreen = () => {
+  const videoContainer = document.querySelector('.video-container')
+  
+  if (!document.fullscreenElement) {
+    // Enter fullscreen
+    if (videoContainer.requestFullscreen) {
+      videoContainer.requestFullscreen()
+    } else if (videoContainer.webkitRequestFullscreen) {
+      videoContainer.webkitRequestFullscreen()
+    } else if (videoContainer.msRequestFullscreen) {
+      videoContainer.msRequestFullscreen()
+    }
+  } else {
+    // Exit fullscreen
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen()
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen()
+    }
+  }
+}
+
+// Handle fullscreen change events to resize player
+const handleFullscreenChange = () => {
+  if (player && player.getIframe) {
+    setTimeout(() => {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        // In fullscreen - resize to full viewport
+        player.getIframe().width = window.innerWidth
+        player.getIframe().height = window.innerHeight - 20 // Leave space for control bar
+      } else {
+        // Exit fullscreen - restore original size
+        player.getIframe().width = 640
+        player.getIframe().height = 360
+      }
+    }, 100)
+  }
+}
+
+// Function to update video title from YouTube API
+const updateVideoTitle = () => {
+  if (player && player.getVideoData) {
+    try {
+      const videoData = player.getVideoData()
+      if (videoData && videoData.title) {
+        currentVideoTitle.value = videoData.title
+      } else {
+        currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.length}`
+      }
+    } catch (error) {
+      console.log('Unable to get video title:', error)
+      currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.length}`
+    }
+  } else {
+    currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.length}`
+  }
 }
 
 // Function to hide YouTube overlays
@@ -186,12 +364,24 @@ onMounted(() => {
   setTimeout(() => {
     showStatic.value = false
   }, STATIC_DURATION)
+  
+  // Add fullscreen change listeners
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+  document.addEventListener('MSFullscreenChange', handleFullscreenChange)
 })
 
 onUnmounted(() => {
   if (player && player.destroy) {
     player.destroy()
   }
+  
+  // Remove fullscreen change listeners
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+  document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+  document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
 })
 </script>
 
@@ -401,5 +591,151 @@ onUnmounted(() => {
   width: 0 !important;
   height: 0 !important;
   overflow: hidden !important;
+}
+
+/* Control Bar Styles */
+.control-bar {
+  display: flex;
+  align-items: center;
+  width: 640px;
+  max-width: 100%;
+  height: 16px;
+  padding-left: 6px;
+  padding-right: 6px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 0 0 6px 6px;
+  gap: 6px;
+}
+
+.nav-button,
+.fullscreen-button {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  padding: 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.nav-button:hover,
+.fullscreen-button:hover {
+  background: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+}
+
+.nav-button:active,
+.fullscreen-button:active {
+  transform: scale(0.95);
+}
+
+.info-display {
+  flex: 1;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive adjustments for control bar */
+@media (max-width: 768px) {
+  .control-bar {
+    width: 100%;
+  }
+  
+  .info-display {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-display {
+    font-size: 6px;
+  }
+}
+
+/* Fullscreen styles */
+.video-container:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+.video-container:fullscreen .player-wrapper {
+  width: 100vw !important;
+  height: calc(100vh - 20px) !important; /* Leave space for control bar */
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.video-container:fullscreen .youtube-player {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.video-container:fullscreen .control-bar {
+  width: 100vw !important;
+  height: 20px !important;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 0;
+}
+
+/* Webkit fullscreen support */
+.video-container:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+.video-container:-webkit-full-screen .player-wrapper {
+  width: 100vw !important;
+  height: calc(100vh - 20px) !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.video-container:-webkit-full-screen .youtube-player {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.video-container:-webkit-full-screen .control-bar {
+  width: 100vw !important;
+  height: 20px !important;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 0;
 }
 </style> 
