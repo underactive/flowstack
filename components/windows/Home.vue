@@ -1,11 +1,42 @@
 <template>
   <div class="home-page">
     <VideoPlayer />
+    <MusicPlayer ref="musicPlayerRef" />
+    
+    <!-- New sections below music player -->
+    <div class="music-controls-wrapper">
+      <div class="music-controls-section">
+        <!-- Left: Vibes Dropdown -->
+        <VibeSelector v-model="selectedVibe" @vibe-changed="onVibeChanged" />
+        
+        <!-- Right: VU Meters -->
+        <AudioVisualizer :is-playing="isPlaying" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import VideoPlayer from './components/VideoPlayer.vue'
+import MusicPlayer from './components/MusicPlayer.vue'
+import VibeSelector from './components/VibeSelector.vue'
+import AudioVisualizer from './components/AudioVisualizer.vue'
+
+// Refs and state
+const musicPlayerRef = ref(null)
+const selectedVibe = ref('')
+
+// Computed property to check if music is playing
+const isPlaying = computed(() => {
+  return musicPlayerRef.value?.isPlaying || false
+})
+
+// Event handlers
+const onVibeChanged = (vibe) => {
+  console.log('Vibe changed to:', vibe)
+  // TODO: Implement vibe functionality
+}
 </script>
 
 <style scoped>
@@ -13,61 +44,29 @@ import VideoPlayer from './components/VideoPlayer.vue'
   min-height: 100%;
 }
 
-.welcome-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 40px;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  width: 100%;
+
+
+/* Music controls wrapper */
+.music-controls-wrapper {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  padding: 0;
+  margin-top: 0;
 }
 
-.welcome-card h1 {
-  color: white;
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.welcome-card p {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1.2rem;
-  margin-bottom: 40px;
-}
-
-.feature-grid {
+/* Music controls section */
+.music-controls-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 20px;
-  margin-top: 30px;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
 }
 
-.feature-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.feature-icon {
-  width: 40px;
-  height: 40px;
-  color: white;
-  margin-bottom: 10px;
-}
-
-.feature-item h3 {
-  color: white;
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.feature-item p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
-  margin: 0;
+/* Responsive design */
+@media (max-width: 768px) {
+  .music-controls-section {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 </style> 

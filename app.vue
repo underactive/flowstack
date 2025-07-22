@@ -134,7 +134,7 @@ const windowTitles = {
 }
 
 const windowSizes = {
-  '/': { width: 644, height: 600, isResizable: false },
+  '/': { width: 644, height: 678, isResizable: false },
   '/about': { width: 1024, height: 768 },
   '/contact': { width: 1200, height: 900 },
   '/projects': { width: 1200, height: 900 },
