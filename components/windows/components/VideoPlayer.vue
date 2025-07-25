@@ -532,9 +532,9 @@ onUnmounted(() => {
     repeating-linear-gradient(
       0deg,
       transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.4) 2px,
-      rgba(0, 0, 0, 0.4) 4px
+      transparent 1px,
+      rgba(0, 0, 0, 0.4) 1px,
+      rgba(0, 0, 0, 0.4) 2px
     );
   border-radius: 12px;
   overflow: hidden;
