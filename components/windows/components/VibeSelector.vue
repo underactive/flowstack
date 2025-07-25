@@ -1,17 +1,30 @@
 <template>
   <div class="vibes-section">
     <span class="vibe-label">Vibe</span>
-    <select v-model="selectedVibe" class="vibes-dropdown" @change="onVibeChange">
-      <option value="">Select a vibe...</option>
-      <option v-for="vibe in vibeOptions" :key="vibe.value" :value="vibe.value">
-        {{ vibe.label }}
-      </option>
-    </select>
+    <div class="custom-dropdown" ref="dropdownRef" @click="toggleDropdown">
+      <div class="dropdown-display">
+        <span class="dropdown-text">{{ selectedVibeLabel }}</span>
+        <span class="dropdown-arrow" :class="{ 'rotated': isOpen }">▼</span>
+      </div>
+      <Teleport to="body">
+        <div v-if="isOpen" class="dropdown-options" :style="dropdownPosition">
+          <div 
+            v-for="vibe in vibeOptions" 
+            :key="vibe.value" 
+            class="dropdown-option"
+            :class="{ 'selected': vibe.value === selectedVibe }"
+            @click.stop="selectVibe(vibe.value)"
+          >
+            {{ vibe.label }}
+          </div>
+        </div>
+      </Teleport>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useVibeConfig } from '~/composables/useVibeConfig'
 
 // Props
@@ -30,6 +43,8 @@ const { vibeOptions, setVibe, currentVibe } = useVibeConfig()
 
 // Local state
 const selectedVibe = ref(props.modelValue || currentVibe.value)
+const isOpen = ref(false)
+const dropdownRef = ref(null)
 console.log('VibeSelector: initialized with selectedVibe:', selectedVibe.value, 'currentVibe:', currentVibe.value)
 
 // Watch for external changes to modelValue
@@ -46,14 +61,42 @@ watch(currentVibe, (newValue) => {
   }
 })
 
-// Handle vibe change
-const onVibeChange = () => {
-  console.log('VibeSelector: onVibeChange called with:', selectedVibe.value)
-  if (selectedVibe.value) {
-    console.log('VibeSelector: setting vibe to:', selectedVibe.value)
-    setVibe(selectedVibe.value)
-    emit('update:modelValue', selectedVibe.value)
-    emit('vibe-changed', selectedVibe.value)
+// Computed property for display text
+const selectedVibeLabel = computed(() => {
+  if (!selectedVibe.value) return 'Select a vibe...'
+  const vibe = vibeOptions.value.find(v => v.value === selectedVibe.value)
+  return vibe ? vibe.label : 'Select a vibe...'
+})
+
+// Computed property for dropdown position
+const dropdownPosition = computed(() => {
+  if (!dropdownRef.value || !isOpen.value) return {}
+  
+  const rect = dropdownRef.value.getBoundingClientRect()
+  return {
+    position: 'fixed',
+    top: `${rect.bottom + 2}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+    zIndex: 10000
+  }
+})
+
+// Toggle dropdown
+const toggleDropdown = () => {
+  isOpen.value = !isOpen.value
+}
+
+// Select vibe
+const selectVibe = (vibeValue) => {
+  selectedVibe.value = vibeValue
+  isOpen.value = false
+  
+  if (vibeValue) {
+    console.log('VibeSelector: setting vibe to:', vibeValue)
+    setVibe(vibeValue)
+    emit('update:modelValue', vibeValue)
+    emit('vibe-changed', vibeValue)
   }
 }
 </script>
@@ -78,8 +121,13 @@ const onVibeChange = () => {
   min-width: fit-content;
 }
 
-.vibes-dropdown {
+.custom-dropdown {
   flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+
+.dropdown-display {
   height: 10px;
   padding: 0 4px;
   background: rgba(255, 255, 255, 0.2);
@@ -89,26 +137,63 @@ const onVibeChange = () => {
   font-size: 8px;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.5px;
-  cursor: pointer;
-  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   transition: all 0.2s ease;
 }
 
-.vibes-dropdown:hover {
+.dropdown-display:hover {
   background: rgba(255, 255, 255, 0.4);
   color: rgba(255, 255, 255, 1);
   transform: scale(1.1);
 }
 
-.vibes-dropdown:active {
+.dropdown-display:active {
   transform: scale(0.95);
 }
 
-.vibes-dropdown option {
+.dropdown-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-arrow {
+  font-size: 6px;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
   background: #1a1a1a;
-  color: white;
-  padding: 2px;
-  font-size: 8px;
+  border-radius: 2px;
+  max-height: 120px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-option {
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 1);
+}
+
+.dropdown-option.selected {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 1);
 }
 
 /* Responsive design */
