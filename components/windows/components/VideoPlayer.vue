@@ -47,6 +47,12 @@ const showStatic = ref(true)
 const currentVideoIndex = ref(0)
 const currentVideoTitle = ref('Loading...')
 
+// Function to get a random video index
+const getRandomVideoIndex = () => {
+  const playlist = videoPlaylist.value
+  return playlist.length > 0 ? Math.floor(Math.random() * playlist.length) : 0
+}
+
 // Duration constants (in milliseconds)
 const VIDEO_DURATION = 25000 // 25 seconds
 const STATIC_DURATION = 4000 // 5 seconds
@@ -93,6 +99,9 @@ const loadYouTubeAPI = () => {
 // Initialize YouTube player
 const initPlayer = async () => {
   const YT = await loadYouTubeAPI()
+  
+  // Set initial video index to a random video
+  currentVideoIndex.value = getRandomVideoIndex()
   
   player = new YT.Player('youtube-player', {
     height: '360',
@@ -330,8 +339,8 @@ watch(currentVibe, () => {
     showStatic.value = true
     
     setTimeout(() => {
-      // Reset to first video of new playlist
-      currentVideoIndex.value = 0
+      // Start at a random video in the new playlist
+      currentVideoIndex.value = getRandomVideoIndex()
       // Reload player with new video
       const currentVideo = videoPlaylist.value[currentVideoIndex.value]
       if (currentVideo && player.loadVideoById) {
