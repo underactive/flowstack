@@ -4,6 +4,9 @@
       <div id="youtube-player" class="youtube-player"/>
       <img src="/images/player/player_logo.svg" alt="Player Logo" class="player-logo" />
       <div v-if="showStatic" class="tv-static"/>
+      <div v-if="!isPoweredOn" class="power-off-overlay"/>
+      <div v-if="showPowerOffStatic" class="power-off-static"/>
+      <div v-if="showPowerOnStatic" class="power-on-static"/>
       <div class="crt-overlay"/>
     </div>
   </div>
@@ -20,6 +23,10 @@
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
         <path d="M3 2L7 5L3 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
+    </button>
+    
+    <button class="power-button" @click="togglePower" :title="isPoweredOn ? 'Power Off' : 'Power On'">
+      {{ isPoweredOn ? 'CRT on' : 'CRT off' }}
     </button>
     
     <div class="info-display">
@@ -44,6 +51,10 @@ const { getCurrentVideoPlaylist, currentVibe } = useVibeConfig()
 const videoPlaylist = computed(() => getCurrentVideoPlaylist())
 let player = null
 const showStatic = ref(true)
+const isPoweredOn = ref(true)
+const showPowerOffStatic = ref(false)
+const showPowerOnStatic = ref(false)
+const isPoweringOn = ref(false)
 const currentVideoIndex = ref(0)
 const currentVideoTitle = ref('Loading...')
 
@@ -62,6 +73,11 @@ const videoExtensions = ['.mov', '.mp4', '.avi', '.mkv', '.webm', '.qt', '.wmv',
 
 // Computed property to create fake unix-style filename
 const fakeFilename = computed(() => {
+  // Return empty string when CRT is powered off
+  if (!isPoweredOn.value) {
+    return ''
+  }
+  
   // Take first 4 words, convert to lowercase, replace spaces with underscores
   const words = currentVideoTitle.value
     .toLowerCase()
@@ -266,6 +282,68 @@ const previousVideo = () => {
       resumeVideoCycle()
     }, STATIC_DURATION)
   }, 100)
+}
+
+// Power toggle functionality
+const togglePower = () => {
+  if (isPoweredOn.value) {
+    // Powering off
+    isPoweredOn.value = false
+    
+    // Clear the video info immediately when powering off
+    currentVideoTitle.value = ''
+    
+    // Show power-off static animation first
+    showPowerOffStatic.value = true
+    
+    if (player) {
+      player.pauseVideo()
+      pauseVideoCycle()
+    }
+    
+    // Hide the static after animation completes
+    setTimeout(() => {
+      showPowerOffStatic.value = false
+    }, 1500) // 1.5 seconds for the power-down animation
+  } else {
+    // Powering on
+    isPoweringOn.value = true
+    
+    // Step 1: Show static overlay underneath black overlay
+    showPowerOnStatic.value = true
+    
+    // Step 2: Unpause the video (but it's still hidden by overlays)
+    if (player) {
+      player.playVideo()
+    }
+    
+    // Step 3: Start fading the black overlay to reveal static after animation starts
+    setTimeout(() => {
+      const powerOffOverlay = document.querySelector('.power-off-overlay')
+      if (powerOffOverlay) {
+        powerOffOverlay.style.transition = 'opacity 1s ease-in-out'
+        powerOffOverlay.style.opacity = '0'
+      }
+    }, 500) // Delay to let the static animation start first
+    
+    // Step 4: After black overlay fades, hide static to reveal video
+    setTimeout(() => {
+      showPowerOnStatic.value = false
+      isPoweredOn.value = true
+      isPoweringOn.value = false
+      resumeVideoCycle()
+      
+      // Restore the video info when powering back on
+      updateVideoTitle()
+      
+      // Reset black overlay opacity for next power-off
+      const powerOffOverlay = document.querySelector('.power-off-overlay')
+      if (powerOffOverlay) {
+        powerOffOverlay.style.opacity = '1'
+        powerOffOverlay.style.transition = ''
+      }
+    }, 1200) // 1 second for fade + 200ms buffer
+  }
 }
 
 // Fullscreen functionality
@@ -519,6 +597,70 @@ onUnmounted(() => {
   }
 }
 
+/* Power off overlay */
+.power-off-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1500;
+  background: black;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* Power off static animation */
+.power-off-static {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1600;
+  background-image: repeating-radial-gradient(circle at 17% 32%, white, black 0.00085px);
+  border-radius: 12px;
+  pointer-events: none;
+  animation: powerOffShrink 1.5s ease-in-out forwards, back 5s linear infinite;
+}
+
+@keyframes powerOffShrink {
+  0% {
+    height: 100%;
+    opacity: 1;
+    top: 0;
+  }
+  50% {
+    height: 100%;
+    opacity: 0.8;
+    top: 0;
+  }
+  90% {
+    height: 2px;
+    opacity: 0.6;
+    top: calc(50% - 1px);
+  }
+  100% {
+    height: 0px;
+    opacity: 0;
+    top: 50%;
+  }
+}
+
+/* Power on static overlay */
+.power-on-static {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1400;
+  background-image: repeating-radial-gradient(circle at 17% 32%, white, black 0.00085px);
+  border-radius: 12px;
+  pointer-events: none;
+  animation: back 5s linear infinite;
+}
+
 /* CRT overlay with interlaced scan lines */
 .crt-overlay {
   position: absolute;
@@ -648,6 +790,7 @@ onUnmounted(() => {
 }
 
 .nav-button,
+.power-button,
 .fullscreen-button {
   width: 10px;
   height: 10px;
@@ -666,6 +809,7 @@ onUnmounted(() => {
 }
 
 .nav-button:hover,
+.power-button:hover,
 .fullscreen-button:hover {
   background: rgba(255, 255, 255, 0.4);
   color: rgba(255, 255, 255, 1);
@@ -673,8 +817,26 @@ onUnmounted(() => {
 }
 
 .nav-button:active,
+.power-button:active,
 .fullscreen-button:active {
   transform: scale(0.95);
+}
+
+.power-button {
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding: 0 4px;
+  min-width: auto;
+  width: auto;
+}
+
+.power-button:hover {
+  background: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 1);
 }
 
 .info-display {
