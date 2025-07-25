@@ -1,6 +1,6 @@
 <template>
   <div class="home-page">
-    <VideoPlayer />
+    <VideoPlayer ref="videoPlayerRef" />
     <MusicPlayer ref="musicPlayerRef" />
     
     <!-- New sections below music player -->
@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useVibeConfig } from '~/composables/useVibeConfig'
 import VideoPlayer from './components/VideoPlayer.vue'
 import MusicPlayer from './components/MusicPlayer.vue'
@@ -29,11 +29,20 @@ const { currentVibe, DEFAULT_VIBE } = useVibeConfig()
 
 // Refs and state
 const musicPlayerRef = ref(null)
+const videoPlayerRef = ref(null)
 const selectedVibe = ref(currentVibe.value || DEFAULT_VIBE)
 
 // Computed property to check if music is playing
 const isPlaying = computed(() => {
   return musicPlayerRef.value?.isPlaying || false
+})
+
+// Watch for music play state changes
+watch(isPlaying, (newIsPlaying) => {
+  if (newIsPlaying && videoPlayerRef.value) {
+    // Power on the video player when music starts playing
+    videoPlayerRef.value.powerOn()
+  }
 })
 
 // Event handlers

@@ -50,8 +50,8 @@ const { getCurrentVideoPlaylist, currentVibe } = useVibeConfig()
 // Reactive video playlist that updates with vibe changes
 const videoPlaylist = computed(() => getCurrentVideoPlaylist())
 let player = null
-const showStatic = ref(true)
-const isPoweredOn = ref(true)
+const showStatic = ref(false)
+const isPoweredOn = ref(false)
 const showPowerOffStatic = ref(false)
 const showPowerOnStatic = ref(false)
 const isPoweringOn = ref(false)
@@ -76,6 +76,11 @@ const fakeFilename = computed(() => {
   // Return empty string when CRT is powered off
   if (!isPoweredOn.value) {
     return ''
+  }
+  
+  // Show "tuning in..." only when static is showing and CRT is powered on
+  if (showStatic.value) {
+    return 'tuning in...'
   }
   
   // Take first 4 words, convert to lowercase, replace spaces with underscores
@@ -124,7 +129,7 @@ const initPlayer = async () => {
     width: '640',
     videoId: videoPlaylist.value[currentVideoIndex.value].id,
     playerVars: {
-      autoplay: 1,
+      autoplay: 0, // Don't autoplay initially since CRT is off
       mute: 1,
       loop: 0, // Disable loop since we're manually cycling
       controls: 0,
@@ -144,12 +149,8 @@ const initPlayer = async () => {
         console.log('YouTube player ready')
         // Hide overlays after player is ready
         hideYouTubeOverlays()
-        // Start the video cycling timer
-        startVideoCycle()
-        // Update video title when player is ready (with delay to ensure video data is loaded)
-        setTimeout(() => {
-          updateVideoTitle()
-        }, 1000)
+        // Don't start video cycling or update title since CRT is off initially
+        // These will be handled when powerOn() is called
       },
       onStateChange: (event) => {
         // Handle player state changes
@@ -298,6 +299,51 @@ const previousVideo = () => {
   }, 100)
 }
 
+// Power on functionality (can be called externally)
+const powerOn = () => {
+  if (!isPoweredOn.value) {
+    // Powering on
+    isPoweringOn.value = true
+    
+    // Step 1: Show static overlay underneath black overlay
+    showPowerOnStatic.value = true
+    
+    // Step 2: Start playing the video (but it's still hidden by overlays)
+    if (player) {
+      player.playVideo()
+      // Start the video cycling timer
+      startVideoCycle()
+    }
+    
+    // Step 3: Start fading the black overlay to reveal static after animation starts
+    setTimeout(() => {
+      const powerOffOverlay = document.querySelector('.power-off-overlay')
+      if (powerOffOverlay) {
+        powerOffOverlay.style.transition = 'opacity 1s ease-in-out'
+        powerOffOverlay.style.opacity = '0'
+      }
+    }, 500) // Delay to let the static animation start first
+    
+    // Step 4: After black overlay fades, hide static to reveal video
+    setTimeout(() => {
+      showPowerOnStatic.value = false
+      showStatic.value = false // Hide the initial static overlay
+      isPoweredOn.value = true
+      isPoweringOn.value = false
+      
+      // Update video title when powering back on
+      updateVideoTitle()
+      
+      // Reset black overlay opacity for next power-off
+      const powerOffOverlay = document.querySelector('.power-off-overlay')
+      if (powerOffOverlay) {
+        powerOffOverlay.style.opacity = '1'
+        powerOffOverlay.style.transition = ''
+      }
+    }, 1200) // 1 second for fade + 200ms buffer
+  }
+}
+
 // Power toggle functionality
 const togglePower = () => {
   if (isPoweredOn.value) {
@@ -320,43 +366,8 @@ const togglePower = () => {
       showPowerOffStatic.value = false
     }, 1500) // 1.5 seconds for the power-down animation
   } else {
-    // Powering on
-    isPoweringOn.value = true
-    
-    // Step 1: Show static overlay underneath black overlay
-    showPowerOnStatic.value = true
-    
-    // Step 2: Unpause the video (but it's still hidden by overlays)
-    if (player) {
-      player.playVideo()
-    }
-    
-    // Step 3: Start fading the black overlay to reveal static after animation starts
-    setTimeout(() => {
-      const powerOffOverlay = document.querySelector('.power-off-overlay')
-      if (powerOffOverlay) {
-        powerOffOverlay.style.transition = 'opacity 1s ease-in-out'
-        powerOffOverlay.style.opacity = '0'
-      }
-    }, 500) // Delay to let the static animation start first
-    
-    // Step 4: After black overlay fades, hide static to reveal video
-    setTimeout(() => {
-      showPowerOnStatic.value = false
-      isPoweredOn.value = true
-      isPoweringOn.value = false
-      resumeVideoCycle()
-      
-      // Restore the video info when powering back on
-      updateVideoTitle()
-      
-      // Reset black overlay opacity for next power-off
-      const powerOffOverlay = document.querySelector('.power-off-overlay')
-      if (powerOffOverlay) {
-        powerOffOverlay.style.opacity = '1'
-        powerOffOverlay.style.transition = ''
-      }
-    }, 1200) // 1 second for fade + 200ms buffer
+    // Powering on - use the same logic as powerOn()
+    powerOn()
   }
 }
 
@@ -491,10 +502,8 @@ const hideYouTubeOverlays = () => {
 onMounted(() => {
   initPlayer()
   
-  // Hide initial static overlay after STATIC_DURATION
-  setTimeout(() => {
-    showStatic.value = false
-  }, STATIC_DURATION)
+  // Don't hide initial static overlay since CRT is off initially
+  // It will be hidden when powerOn() is called
   
   // Add fullscreen change listeners
   document.addEventListener('fullscreenchange', handleFullscreenChange)
@@ -513,6 +522,11 @@ onUnmounted(() => {
   document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
   document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
   document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+})
+
+// Expose methods for parent components
+defineExpose({
+  powerOn
 })
 </script>
 
