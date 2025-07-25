@@ -92,7 +92,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useVibeConfig } from '~/composables/useVibeConfig'
 
 // State management
 const isPlaying = ref(false)
@@ -104,14 +105,17 @@ const repeatMode = ref(false)
 const isLoadingTrack = ref(false)
 const hasUserInteracted = ref(false)
 
+// Use vibe configuration for music playlist
+const { getCurrentPlaylistUrl, currentVibe } = useVibeConfig()
+
 // Current track info from SoundCloud
 const currentTrackInfo = ref({
   title: 'City Pop Collection',
   artist: 'Japanese City Pop'
 })
 
-// Use a SoundCloud playlist for better autoplay
-const playlistUrl = 'https://soundcloud.com/lunar-lass/sets/city-pop-old-japanese-songs'
+// Reactive playlist URL that updates with vibe changes
+const playlistUrl = computed(() => getCurrentPlaylistUrl())
 
 const currentTrackIndex = ref(0)
 
@@ -149,20 +153,42 @@ const loadSoundCloudAPI = () => {
   })
 }
 
-const initMusicPlayer = async () => {
+const initMusicPlayer = async (shouldAutoplay = false) => {
   try {
+    console.log('Initializing SoundCloud player, shouldAutoplay:', shouldAutoplay)
     await loadSoundCloudAPI()
     
     const iframe = document.querySelector('#soundcloud-player')
     if (iframe) {
+      console.log('Creating SoundCloud widget...')
       musicPlayer = window.SC.Widget(iframe)
       
       musicPlayer.bind(window.SC.Widget.Events.READY, () => {
-        console.log('SoundCloud player ready')
-        updatePlayerVolume()
+        console.log('SoundCloud player ready, setting up event listeners...')
         setupEventListeners()
-        updateCurrentTrackInfo()
+        
+        // Wait a bit for the track to load, set volume and update track info
+        setTimeout(() => {
+          updatePlayerVolume()
+          updateCurrentTrackInfo()
+          
+          // Autoplay if requested and user has interacted before
+          if (shouldAutoplay && hasUserInteracted.value) {
+            console.log('Autoplaying new playlist...')
+            musicPlayer.play()
+            isPlaying.value = true
+            startTimeUpdater()
+          }
+        }, 1000)
+        
+        // Check if player is already playing and update state accordingly
+        musicPlayer.isPaused((paused) => {
+          console.log('Player paused state:', paused)
+          isPlaying.value = !paused
+        })
       })
+    } else {
+      console.error('SoundCloud iframe not found')
     }
   } catch (error) {
     console.error('Failed to initialize SoundCloud player:', error)
@@ -170,51 +196,70 @@ const initMusicPlayer = async () => {
 }
 
 const setupEventListeners = () => {
-  if (!musicPlayer) return
+  console.log('Setting up event listeners for music player:', musicPlayer)
+  if (!musicPlayer) {
+    console.log('No music player available for event listeners')
+    return
+  }
   
-  // Set up event listeners
-  musicPlayer.bind(window.SC.Widget.Events.PLAY, () => {
-    console.log('SoundCloud PLAY event')
-    isPlaying.value = true
-    startTimeUpdater()
-    updateCurrentTrackInfo()
-  })
-  
-  musicPlayer.bind(window.SC.Widget.Events.PAUSE, () => {
-    console.log('SoundCloud PAUSE event')
-    isPlaying.value = false
-    stopTimeUpdater()
-  })
-  
-  musicPlayer.bind(window.SC.Widget.Events.FINISH, () => {
-    console.log('SoundCloud FINISH event')
-    const wasPlaying = isPlaying.value
-    isPlaying.value = false
-    stopTimeUpdater()
-    if (repeatMode.value) {
-      musicPlayer.seekTo(0)
-      musicPlayer.play()
-    } else {
-      // Pass true to indicate the next track should autoplay since the previous was playing
-      nextTrackWithAutoplay(wasPlaying)
-    }
-  })
-  
-  // Handle when a new track is loaded and ready
-  musicPlayer.bind(window.SC.Widget.Events.LOAD_PROGRESS, () => {
-    // Update duration when track is loaded
-    if (musicPlayer.getDuration) {
-      musicPlayer.getDuration((duration_ms) => {
-        duration.value = duration_ms / 1000
-      })
-    }
-  })
-  
-  // Handle when track changes
-  musicPlayer.bind(window.SC.Widget.Events.TRACK_CHANGE, () => {
-    console.log('SoundCloud TRACK_CHANGE event')
-    updateCurrentTrackInfo()
-  })
+  try {
+    // Set up event listeners
+    musicPlayer.bind(window.SC.Widget.Events.PLAY, () => {
+      console.log('SoundCloud PLAY event received')
+      isPlaying.value = true
+      startTimeUpdater()
+      
+      // Update track info when play starts (should definitely have track data)
+      setTimeout(() => {
+        updateCurrentTrackInfo()
+      }, 200)
+    })
+    
+    musicPlayer.bind(window.SC.Widget.Events.PAUSE, () => {
+      console.log('SoundCloud PAUSE event received')
+      isPlaying.value = false
+      stopTimeUpdater()
+    })
+    
+    musicPlayer.bind(window.SC.Widget.Events.FINISH, () => {
+      console.log('SoundCloud FINISH event')
+      const wasPlaying = isPlaying.value
+      isPlaying.value = false
+      stopTimeUpdater()
+      if (repeatMode.value) {
+        musicPlayer.seekTo(0)
+        musicPlayer.play()
+      } else {
+        // Pass true to indicate the next track should autoplay since the previous was playing
+        nextTrackWithAutoplay(wasPlaying)
+      }
+    })
+    
+    // Handle when a new track is loaded and ready
+    musicPlayer.bind(window.SC.Widget.Events.LOAD_PROGRESS, () => {
+      // Update duration when track is loaded
+      if (musicPlayer.getDuration) {
+        musicPlayer.getDuration((duration_ms) => {
+          duration.value = duration_ms / 1000
+        })
+      }
+      
+      // Update track info when track is loaded
+      setTimeout(() => {
+        updateCurrentTrackInfo()
+      }, 500)
+    })
+    
+    // Handle when track changes
+    musicPlayer.bind(window.SC.Widget.Events.TRACK_CHANGE, () => {
+      console.log('SoundCloud TRACK_CHANGE event')
+      updateCurrentTrackInfo()
+    })
+    
+    console.log('Event listeners bound successfully')
+  } catch (error) {
+    console.error('Error binding event listeners:', error)
+  }
 }
 
 // Time updater
@@ -243,15 +288,27 @@ const stopTimeUpdater = () => {
 
 // Control functions
 const togglePlayPause = () => {
-  if (!musicPlayer) return
+  console.log('togglePlayPause called, isPlaying:', isPlaying.value, 'musicPlayer:', musicPlayer)
+  if (!musicPlayer) {
+    console.log('No music player available for toggle')
+    return
+  }
   
   // Mark that user has interacted
   hasUserInteracted.value = true
   
   if (isPlaying.value) {
+    console.log('Attempting to pause music')
     musicPlayer.pause()
+    // Manually update state since events might not fire
+    isPlaying.value = false
+    stopTimeUpdater()
   } else {
+    console.log('Attempting to play music')
     musicPlayer.play()
+    // Manually update state since events might not fire
+    isPlaying.value = true
+    startTimeUpdater()
   }
 }
 
@@ -361,10 +418,15 @@ const updatePlayerVolume = () => {
 }
 
 const updateCurrentTrackInfo = () => {
-  if (!musicPlayer) return
+  console.log('updateCurrentTrackInfo called, musicPlayer:', musicPlayer)
+  if (!musicPlayer) {
+    console.log('No music player available for track info update')
+    return
+  }
   
   // Get current track info from SoundCloud
   musicPlayer.getCurrentSound((sound) => {
+    console.log('getCurrentSound callback, sound:', sound)
     if (sound) {
       // Extract artist and title from the track title
       // SoundCloud track titles often include "Artist - Title" format
@@ -383,9 +445,63 @@ const updateCurrentTrackInfo = () => {
         artist: artist
       }
       console.log('Updated track info:', currentTrackInfo.value)
+    } else {
+      console.log('No sound data available yet')
     }
   })
 }
+
+// Watch for vibe changes and reload music player
+watch(currentVibe, () => {
+  console.log('Vibe changed, reloading music player with:', playlistUrl.value)
+  
+  // Store current playing state before resetting
+  const wasPlaying = isPlaying.value
+  
+  // Reset track index and player state
+  currentTrackIndex.value = 0
+  isPlaying.value = false
+  currentTime.value = 0
+  
+  // Show loading state for track info
+  currentTrackInfo.value = {
+    title: 'Loading...',
+    artist: 'Please wait'
+  }
+  
+  // Stop current player and unbind events
+  if (musicPlayer) {
+    stopTimeUpdater()
+    musicPlayer.unbind(window.SC.Widget.Events.READY)
+    musicPlayer.unbind(window.SC.Widget.Events.PLAY)
+    musicPlayer.unbind(window.SC.Widget.Events.PAUSE)
+    musicPlayer.unbind(window.SC.Widget.Events.FINISH)
+    musicPlayer.unbind(window.SC.Widget.Events.LOAD_PROGRESS)
+    musicPlayer.unbind(window.SC.Widget.Events.TRACK_CHANGE)
+    musicPlayer = null
+  }
+  
+  // Update iframe src with new playlist
+  const iframe = document.querySelector('#soundcloud-player')
+  if (iframe) {
+    const newSrc = `https://w.soundcloud.com/player/?url=${encodeURIComponent(playlistUrl.value)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&show_playlist=true`
+    console.log('Updating iframe src to:', newSrc)
+    iframe.src = newSrc
+    
+    // Reinitialize player after iframe loads
+    iframe.onload = () => {
+      console.log('Iframe loaded, reinitializing player...')
+      setTimeout(() => {
+        initMusicPlayer(wasPlaying)
+      }, 500)
+    }
+  }
+})
+
+// Also watch playlistUrl directly to ensure it updates
+watch(playlistUrl, (newUrl) => {
+  console.log('Playlist URL changed to:', newUrl)
+})
 
 // Expose state for parent components
 defineExpose({

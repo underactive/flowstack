@@ -18,14 +18,18 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useVibeConfig } from '~/composables/useVibeConfig'
 import VideoPlayer from './components/VideoPlayer.vue'
 import MusicPlayer from './components/MusicPlayer.vue'
 import VibeSelector from './components/VibeSelector.vue'
 import AudioVisualizer from './components/AudioVisualizer.vue'
 
+// Use vibe configuration
+const { currentVibe, DEFAULT_VIBE } = useVibeConfig()
+
 // Refs and state
 const musicPlayerRef = ref(null)
-const selectedVibe = ref('')
+const selectedVibe = ref(currentVibe.value || DEFAULT_VIBE)
 
 // Computed property to check if music is playing
 const isPlaying = computed(() => {
@@ -35,7 +39,7 @@ const isPlaying = computed(() => {
 // Event handlers
 const onVibeChanged = (vibe) => {
   console.log('Vibe changed to:', vibe)
-  // TODO: Implement vibe functionality
+  selectedVibe.value = vibe
 }
 </script>
 

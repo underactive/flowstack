@@ -35,17 +35,13 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
+import { useVibeConfig } from '~/composables/useVibeConfig'
 
-// YouTube video playlist with start times (in seconds)
-const videoPlaylist = [
-  { id: 'Iv76oc22Qr4', startTime: 2 },
-  { id: 'ibNrPjETR_k', startTime: 145 },
-  { id: 'cOEZgwFcpF0', startTime: 8 },
-  { id: 'J_Dxhr_kXGk', startTime: 33 },
-  { id: 'k3WkJq478To', startTime: 5 },
-  { id: 'rDBbaGCCIhk', startTime: 90 },
-]
+const { getCurrentVideoPlaylist, currentVibe } = useVibeConfig()
+
+// Reactive video playlist that updates with vibe changes
+const videoPlaylist = computed(() => getCurrentVideoPlaylist())
 let player = null
 const showStatic = ref(true)
 const currentVideoIndex = ref(0)
@@ -101,7 +97,7 @@ const initPlayer = async () => {
   player = new YT.Player('youtube-player', {
     height: '360',
     width: '640',
-    videoId: videoPlaylist[currentVideoIndex.value].id,
+    videoId: videoPlaylist.value[currentVideoIndex.value].id,
     playerVars: {
       autoplay: 1,
       mute: 1,
@@ -116,7 +112,7 @@ const initPlayer = async () => {
       disablekb: 1,
       enablejsapi: 1,
       origin: window.location.origin,
-      start: videoPlaylist[currentVideoIndex.value].startTime
+      start: videoPlaylist.value[currentVideoIndex.value].startTime
     },
     events: {
       onReady: (_event) => {
@@ -175,10 +171,10 @@ const cycleToNextVideo = () => {
   
   // Wait for static to show, then load next video
   setTimeout(() => {
-    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.length
-    const currentVideo = videoPlaylist[currentVideoIndex.value]
+    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.value.length
+    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
     
-    console.log(`Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    console.log(`Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
     
     if (player && player.loadVideoById) {
       player.loadVideoById({
@@ -207,10 +203,10 @@ const nextVideo = () => {
   showStatic.value = true
   
   setTimeout(() => {
-    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.length
-    const currentVideo = videoPlaylist[currentVideoIndex.value]
+    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.value.length
+    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
     
-    console.log(`Manual next: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    console.log(`Manual next: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
     
     if (player && player.loadVideoById) {
       player.loadVideoById({
@@ -239,12 +235,12 @@ const previousVideo = () => {
   setTimeout(() => {
     // Go to previous video with wrap-around (if at 0, go to last video)
     currentVideoIndex.value = currentVideoIndex.value === 0 
-      ? videoPlaylist.length - 1 
+      ? videoPlaylist.value.length - 1 
       : currentVideoIndex.value - 1
     
-    const currentVideo = videoPlaylist[currentVideoIndex.value]
+    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
     
-    console.log(`Manual previous: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    console.log(`Manual previous: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
     
     if (player && player.loadVideoById) {
       player.loadVideoById({
@@ -313,16 +309,50 @@ const updateVideoTitle = () => {
       if (videoData && videoData.title) {
         currentVideoTitle.value = videoData.title
       } else {
-        currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.length}`
+        currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.value.length}`
       }
     } catch (error) {
       console.log('Unable to get video title:', error)
-      currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.length}`
+      currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.value.length}`
     }
   } else {
-    currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.length}`
+    currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.value.length}`
   }
 }
+
+// Watch for vibe changes and reload player
+watch(currentVibe, () => {
+  if (player) {
+    // Pause auto-cycling temporarily
+    pauseVideoCycle()
+    
+    // Show static overlay
+    showStatic.value = true
+    
+    setTimeout(() => {
+      // Reset to first video of new playlist
+      currentVideoIndex.value = 0
+      // Reload player with new video
+      const currentVideo = videoPlaylist.value[currentVideoIndex.value]
+      if (currentVideo && player.loadVideoById) {
+        console.log(`Vibe changed: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+        player.loadVideoById({
+          videoId: currentVideo.id,
+          startSeconds: currentVideo.startTime
+        })
+      }
+      
+      // Hide static after video loads and resume timer
+      setTimeout(() => {
+        showStatic.value = false
+        // Update video title immediately when static disappears
+        updateVideoTitle()
+        // Resume the cycle timer after static disappears
+        resumeVideoCycle()
+      }, STATIC_DURATION)
+    }, 100) // Small delay to ensure static shows first
+  }
+})
 
 // Function to hide YouTube overlays
 const hideYouTubeOverlays = () => {

@@ -1,23 +1,21 @@
 <template>
   <div class="vibes-section">
     <span class="vibe-label">Vibe</span>
-    <select v-model="selectedVibe" class="vibes-dropdown" @change="$emit('vibe-changed', selectedVibe)">
+    <select v-model="selectedVibe" class="vibes-dropdown" @change="onVibeChange">
       <option value="">Select a vibe...</option>
-      <option value="japanese-city-pop">Japanese City Pop</option>
-      <option value="synthwave">Synthwave</option>
-      <option value="lofi-hip-hop">Lo-fi Hip Hop</option>
-      <option value="vaporwave">Vaporwave</option>
-      <option value="chillwave">Chillwave</option>
-      <option value="retrowave">Retrowave</option>
+      <option v-for="vibe in vibeOptions" :key="vibe.value" :value="vibe.value">
+        {{ vibe.label }}
+      </option>
     </select>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useVibeConfig } from '~/composables/useVibeConfig'
 
 // Props
-defineProps({
+const props = defineProps({
   modelValue: {
     type: String,
     default: ''
@@ -25,10 +23,39 @@ defineProps({
 })
 
 // Emits
-defineEmits(['update:modelValue', 'vibe-changed'])
+const emit = defineEmits(['update:modelValue', 'vibe-changed'])
 
-// State
-const selectedVibe = ref('')
+// Use vibe configuration
+const { vibeOptions, setVibe, currentVibe } = useVibeConfig()
+
+// Local state
+const selectedVibe = ref(props.modelValue || currentVibe.value)
+console.log('VibeSelector: initialized with selectedVibe:', selectedVibe.value, 'currentVibe:', currentVibe.value)
+
+// Watch for external changes to modelValue
+watch(() => props.modelValue, (newValue) => {
+  if (newValue && newValue !== selectedVibe.value) {
+    selectedVibe.value = newValue
+  }
+})
+
+// Watch for changes to currentVibe from the composable
+watch(currentVibe, (newValue) => {
+  if (newValue !== selectedVibe.value) {
+    selectedVibe.value = newValue
+  }
+})
+
+// Handle vibe change
+const onVibeChange = () => {
+  console.log('VibeSelector: onVibeChange called with:', selectedVibe.value)
+  if (selectedVibe.value) {
+    console.log('VibeSelector: setting vibe to:', selectedVibe.value)
+    setVibe(selectedVibe.value)
+    emit('update:modelValue', selectedVibe.value)
+    emit('vibe-changed', selectedVibe.value)
+  }
+}
 </script>
 
 <style scoped>
