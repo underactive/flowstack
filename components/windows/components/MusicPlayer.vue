@@ -67,18 +67,7 @@
       </div>
     </div>
 
-    <!-- Status Indicators -->
-    <div class="status-bar">
-      <div class="status-indicator" :class="{ active: isPlaying }">
-        {{ isPlaying ? 'Playing' : 'Paused' }}
-      </div>
-      <div class="status-indicator" :class="{ active: repeatMode }">
-        Repeat
-      </div>
-      <div v-if="!hasUserInteracted" class="status-indicator autoplay-blocked">
-        Click to enable autoplay
-      </div>
-    </div>
+
 
     <!-- Hidden SoundCloud Player for Audio -->
     <iframe 
@@ -773,43 +762,7 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Status Bar */
-.status-bar {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
 
-.status-indicator {
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 11px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.status-indicator.active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2);
-}
-
-.status-indicator.autoplay-blocked {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.2);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
-}
 
 /* Hidden SoundCloud Player */
 .soundcloud-audio-player {
@@ -904,15 +857,6 @@ onUnmounted(() => {
     width: 100px;
   }
   
-  .status-bar {
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .status-indicator {
-    font-size: 10px;
-    padding: 3px 8px;
-  }
+
 }
 </style> 
