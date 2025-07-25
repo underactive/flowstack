@@ -3,10 +3,10 @@
     <!-- Track Info Section -->
     <div class="track-info">
       <div class="track-title" :class="{ 'loading': isLoadingTrack }">
-        {{ isLoadingTrack ? 'Loading track...' : (currentTrack.title || 'No track loaded') }}
+        {{ isLoadingTrack ? 'Loading track...' : currentTrackInfo.title }}
       </div>
       <div class="track-artist" :class="{ 'loading': isLoadingTrack }">
-        {{ isLoadingTrack ? 'Please wait' : (currentTrack.artist || '---') }}
+        {{ isLoadingTrack ? 'Please wait' : currentTrackInfo.artist }}
       </div>
       <div class="time-info">
         <span class="time-elapsed">{{ formatTime(currentTime) }}</span>
@@ -34,44 +34,27 @@
     <div class="controls-container">
       <div class="transport-controls">
         <button class="control-btn repeat-btn" @click="toggleRepeat" :class="{ active: repeatMode }" title="Repeat">
-          <svg width="16" height="16" viewBox="0 0 20 20">
-            <path d="M4 5h10l-2-2M16 15H6l2 2M4 10v5h12v-5" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          </svg>
+          <UIcon name="i-heroicons-arrow-path-solid" class="w-6 h-6" />
         </button>
 
         <button class="control-btn prev-btn" @click="previousTrack" title="Previous">
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path d="M6 4v16l6-4.5L18 20V4l-6 4.5z" fill="currentColor"/>
-            <rect x="4" y="4" width="2" height="16" fill="currentColor"/>
-          </svg>
+          <UIcon name="i-heroicons-backward-solid" class="w-6 h-6" />
         </button>
         
         <button class="control-btn play-btn" @click="togglePlayPause" title="Play/Pause">
-          <svg v-if="!isPlaying" width="24" height="24" viewBox="0 0 32 32">
-            <path d="M8 4v24l20-12z" fill="currentColor"/>
-          </svg>
-          <svg v-else width="24" height="24" viewBox="0 0 32 32">
-            <rect x="10" y="6" width="4" height="20" fill="currentColor"/>
-            <rect x="18" y="6" width="4" height="20" fill="currentColor"/>
-          </svg>
+          <UIcon v-if="!isPlaying" name="i-heroicons-play-solid" class="w-8 h-8" />
+          <UIcon v-else name="i-heroicons-pause-solid" class="w-8 h-8" />
         </button>
         
         <button class="control-btn next-btn" @click="nextTrack" title="Next">
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path d="M18 4v16l-6-4.5L6 20V4l6 4.5z" fill="currentColor"/>
-            <rect x="18" y="4" width="2" height="16" fill="currentColor"/>
-          </svg>
+          <UIcon name="i-heroicons-forward-solid" class="w-6 h-6" />
         </button>
       </div>
 
       <div class="volume-control">
         <button class="volume-btn" @click="toggleMute" title="Mute/Unmute">
-          <svg v-if="volume > 0" width="16" height="16" viewBox="0 0 20 20">
-            <path d="M3 7v6h3l4 4V3L6 7zM13 10c0-1-.4-1.8-.9-2.4M16 10c0-2-.8-3.8-2-5.2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          </svg>
-          <svg v-else width="16" height="16" viewBox="0 0 20 20">
-            <path d="M3 7v6h3l4 4V3L6 7zM11 6l4 4M11 14l4-4" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          </svg>
+          <UIcon v-if="volume > 0" name="i-heroicons-speaker-wave-solid" class="w-5 h-5" />
+          <UIcon v-else name="i-heroicons-speaker-x-mark-solid" class="w-5 h-5" />
         </button>
         <input 
           type="range" 
@@ -92,13 +75,16 @@
       <div class="status-indicator" :class="{ active: repeatMode }">
         Repeat
       </div>
+      <div v-if="!hasUserInteracted" class="status-indicator autoplay-blocked">
+        Click to enable autoplay
+      </div>
     </div>
 
     <!-- Hidden SoundCloud Player for Audio -->
     <iframe 
       id="soundcloud-player"
       class="soundcloud-audio-player"
-      :src="`https://w.soundcloud.com/player/?url=${encodeURIComponent(currentTrack.soundcloudUrl)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`"
+      :src="`https://w.soundcloud.com/player/?url=${encodeURIComponent(playlistUrl)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&show_playlist=true`"
       frameborder="0"
       allow="autoplay"
     ></iframe>
@@ -116,27 +102,16 @@ const volume = ref(75)
 const seeking = ref(false)
 const repeatMode = ref(false)
 const isLoadingTrack = ref(false)
+const hasUserInteracted = ref(false)
 
-// Current track info
-const currentTrack = ref({
-  title: 'Older Girl', 
-  artist: 'Omega Tribe', 
-  soundcloudUrl: 'https://soundcloud.com/marvin-gabriel-169359727/older-girl-1986-omega-tribe'
+// Current track info from SoundCloud
+const currentTrackInfo = ref({
+  title: 'City Pop Collection',
+  artist: 'Japanese City Pop'
 })
 
-// Playlist for demonstration (Real SoundCloud tracks - Creative Commons)
-const playlist = ref([
-  { 
-    title: 'Older Girl', 
-    artist: 'Omega Tribe', 
-    soundcloudUrl: 'https://soundcloud.com/marvin-gabriel-169359727/older-girl-1986-omega-tribe'
-  },
-  { 
-    title: 'Stay With Me', 
-    artist: 'Miki Matsubara', 
-    soundcloudUrl: 'https://soundcloud.com/miles-reid-80639115/miki-matsubara-stay-with-me'
-  },
-])
+// Use a SoundCloud playlist for better autoplay
+const playlistUrl = 'https://soundcloud.com/lunar-lass/sets/city-pop-old-japanese-songs'
 
 const currentTrackIndex = ref(0)
 
@@ -186,6 +161,7 @@ const initMusicPlayer = async () => {
         console.log('SoundCloud player ready')
         updatePlayerVolume()
         setupEventListeners()
+        updateCurrentTrackInfo()
       })
     }
   } catch (error) {
@@ -201,6 +177,7 @@ const setupEventListeners = () => {
     console.log('SoundCloud PLAY event')
     isPlaying.value = true
     startTimeUpdater()
+    updateCurrentTrackInfo()
   })
   
   musicPlayer.bind(window.SC.Widget.Events.PAUSE, () => {
@@ -211,13 +188,15 @@ const setupEventListeners = () => {
   
   musicPlayer.bind(window.SC.Widget.Events.FINISH, () => {
     console.log('SoundCloud FINISH event')
+    const wasPlaying = isPlaying.value
     isPlaying.value = false
     stopTimeUpdater()
     if (repeatMode.value) {
       musicPlayer.seekTo(0)
       musicPlayer.play()
     } else {
-      nextTrack()
+      // Pass true to indicate the next track should autoplay since the previous was playing
+      nextTrackWithAutoplay(wasPlaying)
     }
   })
   
@@ -229,6 +208,12 @@ const setupEventListeners = () => {
         duration.value = duration_ms / 1000
       })
     }
+  })
+  
+  // Handle when track changes
+  musicPlayer.bind(window.SC.Widget.Events.TRACK_CHANGE, () => {
+    console.log('SoundCloud TRACK_CHANGE event')
+    updateCurrentTrackInfo()
   })
 }
 
@@ -260,6 +245,9 @@ const stopTimeUpdater = () => {
 const togglePlayPause = () => {
   if (!musicPlayer) return
   
+  // Mark that user has interacted
+  hasUserInteracted.value = true
+  
   if (isPlaying.value) {
     musicPlayer.pause()
   } else {
@@ -279,9 +267,11 @@ const previousTrack = () => {
   const shouldKeepPlaying = isPlaying.value
   console.log('Previous track - current playing state:', shouldKeepPlaying)
   
-  currentTrackIndex.value = currentTrackIndex.value > 0 
-    ? currentTrackIndex.value - 1 
-    : playlist.value.length - 1
+  // Mark that user has interacted
+  hasUserInteracted.value = true
+  
+  // For playlist mode, we can go to previous track (SoundCloud handles the bounds)
+  currentTrackIndex.value = Math.max(0, currentTrackIndex.value - 1)
   
   loadCurrentTrack(shouldKeepPlaying)
 }
@@ -290,51 +280,59 @@ const nextTrack = () => {
   const shouldKeepPlaying = isPlaying.value
   console.log('Next track - current playing state:', shouldKeepPlaying)
   
-  currentTrackIndex.value = (currentTrackIndex.value + 1) % playlist.value.length
+  // Mark that user has interacted
+  hasUserInteracted.value = true
+  
+  // For playlist mode, we can go to next track (SoundCloud handles the bounds)
+  currentTrackIndex.value = currentTrackIndex.value + 1
+  
   loadCurrentTrack(shouldKeepPlaying)
 }
 
-const loadCurrentTrack = (shouldAutoPlay = false) => {
-  currentTrack.value = playlist.value[currentTrackIndex.value]
+const nextTrackWithAutoplay = (shouldAutoPlay = true) => {
+  console.log('Next track with autoplay - shouldAutoPlay:', shouldAutoPlay)
   
-  console.log('Loading track:', currentTrack.value.title, 'shouldAutoPlay:', shouldAutoPlay)
+  // For playlist mode, we can go to next track (SoundCloud handles the bounds)
+  currentTrackIndex.value = currentTrackIndex.value + 1
+  loadCurrentTrack(shouldAutoPlay)
+}
+
+const loadCurrentTrack = (shouldAutoPlay = false) => {
+  console.log('Loading track index:', currentTrackIndex.value, 'shouldAutoPlay:', shouldAutoPlay)
   
   if (musicPlayer) {
     // Show loading state
     isLoadingTrack.value = true
     
-    // Stop the current track first and reset state
-    musicPlayer.pause()
-    isPlaying.value = false
-    stopTimeUpdater()
-    currentTime.value = 0
-    duration.value = 240 // Reset to default
-    
-    // Load the new track
-    musicPlayer.load(currentTrack.value.soundcloudUrl, {
-      auto_play: false,
-      buying: false,
-      liking: false,
-      download: false,
-      sharing: false,
-      show_artwork: false,
-      show_comments: false,
-      show_playcount: false,
-      show_user: false,
-      start_track: 0
-    })
-    
-    // Wait for track to load, then handle auto-play and hide loading
-    setTimeout(() => {
-      isLoadingTrack.value = false
+    // For playlist mode, we skip to the next track instead of loading individual tracks
+    if (shouldAutoPlay) {
+      // Skip to next track in playlist
+      musicPlayer.skip(currentTrackIndex.value)
       
-      if (shouldAutoPlay && musicPlayer) {
-        console.log('Attempting to auto-play loaded track')
-        musicPlayer.play()
-      }
+      setTimeout(() => {
+        isLoadingTrack.value = false
+        updatePlayerVolume()
+        updateCurrentTrackInfo()
+        
+        // Only attempt autoplay if user has interacted with the player
+        if (hasUserInteracted.value) {
+          musicPlayer.play()
+          console.log('Track loading complete - autoplay with user interaction')
+        } else {
+          console.log('Track loading complete - autoplay blocked (no user interaction)')
+        }
+      }, 1000)
+    } else {
+      // Just skip to track without playing
+      musicPlayer.skip(currentTrackIndex.value)
       
-      console.log('Track loading complete')
-    }, 2500) // 2.5 second delay to ensure track is loaded
+      setTimeout(() => {
+        isLoadingTrack.value = false
+        updatePlayerVolume()
+        updateCurrentTrackInfo()
+        console.log('Track loading complete - no autoplay')
+      }, 1000)
+    }
   }
 }
 
@@ -362,6 +360,33 @@ const updatePlayerVolume = () => {
   }
 }
 
+const updateCurrentTrackInfo = () => {
+  if (!musicPlayer) return
+  
+  // Get current track info from SoundCloud
+  musicPlayer.getCurrentSound((sound) => {
+    if (sound) {
+      // Extract artist and title from the track title
+      // SoundCloud track titles often include "Artist - Title" format
+      let title = sound.title || 'Unknown Track'
+      let artist = sound.user?.username || 'Unknown Artist'
+      
+      // Try to parse "Artist - Title" format from the track title
+      const titleParts = title.split(' - ')
+      if (titleParts.length >= 2) {
+        artist = titleParts[0].trim()
+        title = titleParts.slice(1).join(' - ').trim()
+      }
+      
+      currentTrackInfo.value = {
+        title: title,
+        artist: artist
+      }
+      console.log('Updated track info:', currentTrackInfo.value)
+    }
+  })
+}
+
 // Expose state for parent components
 defineExpose({
   isPlaying
@@ -383,6 +408,7 @@ onUnmounted(() => {
 <style scoped>
 .music-player {
   width: 100%;
+  max-height: 242px;
   margin: 0;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
@@ -656,6 +682,19 @@ onUnmounted(() => {
   box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2);
 }
 
+.status-indicator.autoplay-blocked {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
 /* Hidden SoundCloud Player */
 .soundcloud-audio-player {
   position: absolute;
@@ -664,6 +703,26 @@ onUnmounted(() => {
   pointer-events: none;
   width: 1px;
   height: 1px;
+}
+
+/* Override Heroicons sizing for music player */
+.music-player .control-btn :where(.i-heroicons\:arrow-path-solid),
+.music-player .control-btn :where(.i-heroicons\:backward-solid),
+.music-player .control-btn :where(.i-heroicons\:forward-solid) {
+  width: 1.5em !important;
+  height: 1.5em !important;
+}
+
+.music-player .play-btn :where(.i-heroicons\:play-solid),
+.music-player .play-btn :where(.i-heroicons\:pause-solid) {
+  width: 1.8em !important;
+  height: 1.8em !important;
+}
+
+.music-player .volume-btn :where(.i-heroicons\:speaker-wave-solid),
+.music-player .volume-btn :where(.i-heroicons\:speaker-x-mark-solid) {
+  width: 1.3em !important;
+  height: 1.3em !important;
 }
 
 /* Responsive Design */
