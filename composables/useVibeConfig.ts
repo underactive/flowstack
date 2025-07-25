@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue'
 export interface VideoItem {
   id: string
   startTime: number
+  playDuration: number
 }
 
 export interface VibeConfig {
@@ -19,14 +20,14 @@ export interface VibeConfigMap {
 // Centralized vibe configuration
 const vibeConfigs: VibeConfigMap = {
   citypop: {
-    name: "Japanese City Pop",
+    name: "Tokyo City Pop",
     videoPlaylist: [
-      { id: 'SRGxH_CTwRM', startTime: 0 },
-      { id: 'JMNUd6qqVOM', startTime: 0 },
-      { id: 'RQ-EE5m30BY', startTime: 0 },
-      { id: 'HN1J87jPCxU', startTime: 208 },
-      { id: 'SAZJY-NnjbE', startTime: 83 },
-      { id: 'dQw4w9WgXcQ', startTime: 0 }
+      { id: 'SRGxH_CTwRM', startTime: 0, playDuration: 0 },
+      { id: 'JMNUd6qqVOM', startTime: 0, playDuration: 0 },
+      { id: 'RQ-EE5m30BY', startTime: 0, playDuration: 0 },
+      { id: 'HN1J87jPCxU', startTime: 208, playDuration: 0 },
+      { id: 'SAZJY-NnjbE', startTime: 83, playDuration: 14 },
+      { id: 'dQw4w9WgXcQ', startTime: 0, playDuration: 0 }
     ],
     playlistUrl: 'https://soundcloud.com/iannnnnnnnnn/sets/80s-japanese-city-pop-playlist'
   },
@@ -34,24 +35,24 @@ const vibeConfigs: VibeConfigMap = {
     name: "Synthwave",
     videoPlaylist: [
 
-      { id: 'Iv76oc22Qr4', startTime: 2 },
-      { id: 'ibNrPjETR_k', startTime: 145 },
-      { id: 'cOEZgwFcpF0', startTime: 8 },
-      { id: 'J_Dxhr_kXGk', startTime: 33 },
-      { id: 'k3WkJq478To', startTime: 5 },
-      { id: 'rDBbaGCCIhk', startTime: 90 },
+      { id: 'Iv76oc22Qr4', startTime: 2, playDuration: 0 },
+      { id: 'ibNrPjETR_k', startTime: 145, playDuration: 0 },
+      { id: 'cOEZgwFcpF0', startTime: 8, playDuration: 0 },
+      { id: 'J_Dxhr_kXGk', startTime: 33, playDuration: 0 },
+      { id: 'k3WkJq478To', startTime: 5, playDuration: 0 },
+      { id: 'rDBbaGCCIhk', startTime: 90, playDuration: 0 },
     ],
     playlistUrl: 'https://soundcloud.com/ferzrrn/sets/synth_20-24'
   },
   lofi: {
     name: "Lo-fi Hip Hop",
     videoPlaylist: [
-      { id: 'jfKfPfyJRdk', startTime: 0 }, // Placeholder - replace with lofi videos
-      { id: 'rUxyKA_-grg', startTime: 25 },
-      { id: 'DWcJFNfaw9c', startTime: 10 },
-      { id: '5yx6BWlEVcY', startTime: 40 },
-      { id: '7NOSDKb0HlU', startTime: 15 },
-      { id: 'lTRiuFIWV54', startTime: 35 },
+      { id: 'jfKfPfyJRdk', startTime: 0, playDuration: 0 }, // Placeholder - replace with lofi videos
+      { id: 'rUxyKA_-grg', startTime: 25, playDuration: 0 },
+      { id: 'DWcJFNfaw9c', startTime: 10, playDuration: 0 },
+      { id: '5yx6BWlEVcY', startTime: 40, playDuration: 0 },
+      { id: '7NOSDKb0HlU', startTime: 15, playDuration: 0 },
+      { id: 'lTRiuFIWV54', startTime: 35, playDuration: 0 },
     ],
     playlistUrl: 'https://soundcloud.com/lofi-hip-hop-music/sets/lofi-lofi'
   }

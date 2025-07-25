@@ -165,10 +165,23 @@ const initPlayer = async () => {
 // Start video cycling timer
 let cycleTimer = null
 
+// Function to get the current video's play duration
+const getCurrentVideoDuration = () => {
+  const currentVideo = videoPlaylist.value[currentVideoIndex.value]
+  if (currentVideo && currentVideo.playDuration > 0) {
+    const duration = currentVideo.playDuration * 1000 // Convert seconds to milliseconds
+    console.log(`Using custom playDuration: ${currentVideo.playDuration}s (${duration}ms) for video: ${currentVideo.id}`)
+    return duration
+  }
+  console.log(`Using default VIDEO_DURATION: ${VIDEO_DURATION}ms for video: ${currentVideo?.id}`)
+  return VIDEO_DURATION // Use default duration if playDuration is 0
+}
+
 const startVideoCycle = () => {
+  const duration = getCurrentVideoDuration()
   cycleTimer = setInterval(() => {
     cycleToNextVideo()
-  }, VIDEO_DURATION)
+  }, duration)
 }
 
 const pauseVideoCycle = () => {
@@ -180,9 +193,10 @@ const pauseVideoCycle = () => {
 
 const resumeVideoCycle = () => {
   if (!cycleTimer) {
+    const duration = getCurrentVideoDuration()
     cycleTimer = setInterval(() => {
       cycleToNextVideo()
-    }, VIDEO_DURATION)
+    }, duration)
   }
 }
 
@@ -199,7 +213,7 @@ const cycleToNextVideo = () => {
     currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.value.length
     const currentVideo = videoPlaylist.value[currentVideoIndex.value]
     
-    console.log(`Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    console.log(`Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
     
     if (player && player.loadVideoById) {
       player.loadVideoById({
@@ -213,7 +227,7 @@ const cycleToNextVideo = () => {
       showStatic.value = false
       // Update video title immediately when static disappears
       updateVideoTitle()
-      // Resume the cycle timer after static disappears
+      // Resume the cycle timer after static disappears with new video's duration
       resumeVideoCycle()
     }, STATIC_DURATION)
   }, 100) // Small delay to ensure static shows first
@@ -231,7 +245,7 @@ const nextVideo = () => {
     currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.value.length
     const currentVideo = videoPlaylist.value[currentVideoIndex.value]
     
-    console.log(`Manual next: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    console.log(`Manual next: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
     
     if (player && player.loadVideoById) {
       player.loadVideoById({
@@ -244,7 +258,7 @@ const nextVideo = () => {
       showStatic.value = false
       // Update video title immediately when static disappears
       updateVideoTitle()
-      // Resume auto-cycling
+      // Resume auto-cycling with new video's duration
       resumeVideoCycle()
     }, STATIC_DURATION)
   }, 100)
@@ -265,7 +279,7 @@ const previousVideo = () => {
     
     const currentVideo = videoPlaylist.value[currentVideoIndex.value]
     
-    console.log(`Manual previous: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+    console.log(`Manual previous: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
     
     if (player && player.loadVideoById) {
       player.loadVideoById({
@@ -278,7 +292,7 @@ const previousVideo = () => {
       showStatic.value = false
       // Update video title immediately when static disappears
       updateVideoTitle()
-      // Resume auto-cycling
+      // Resume auto-cycling with new video's duration
       resumeVideoCycle()
     }, STATIC_DURATION)
   }, 100)
@@ -422,7 +436,7 @@ watch(currentVibe, () => {
       // Reload player with new video
       const currentVideo = videoPlaylist.value[currentVideoIndex.value]
       if (currentVideo && player.loadVideoById) {
-        console.log(`Vibe changed: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s)`)
+        console.log(`Vibe changed: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
         player.loadVideoById({
           videoId: currentVideo.id,
           startSeconds: currentVideo.startTime
@@ -434,7 +448,7 @@ watch(currentVibe, () => {
         showStatic.value = false
         // Update video title immediately when static disappears
         updateVideoTitle()
-        // Resume the cycle timer after static disappears
+        // Resume the cycle timer after static disappears with new video's duration
         resumeVideoCycle()
       }, STATIC_DURATION)
     }, 100) // Small delay to ensure static shows first
