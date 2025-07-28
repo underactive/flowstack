@@ -10,12 +10,12 @@ export const useBackground = () => {
 
   // Available backgrounds
   const backgrounds = [
-    { id: 'gradient-1', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-    { id: 'gradient-2', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-    { id: 'gradient-3', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-    { id: 'gradient-4', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
-    { id: 'gradient-5', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-    { id: 'gradient-6', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }
+    { id: 'gradient-1', gradient: 'linear-gradient(155deg, #151515 0%, #2b2a2a 50%, #3d0b50 100%)' },
+    { id: 'gradient-2', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    { id: 'gradient-3', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    { id: 'gradient-4', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+    { id: 'gradient-5', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+    { id: 'gradient-6', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }
   ]
 
   // Get current background gradient
