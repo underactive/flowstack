@@ -65,7 +65,7 @@ const getRandomVideoIndex = () => {
 }
 
 // Duration constants (in milliseconds)
-const VIDEO_DURATION = 25000 // 25 seconds
+const VIDEO_DURATION = 15000 // 15 seconds
 const STATIC_DURATION = 4000 // 5 seconds
 
 // Video file extensions for fake filename
@@ -340,7 +340,7 @@ const powerOn = () => {
         powerOffOverlay.style.opacity = '1'
         powerOffOverlay.style.transition = ''
       }
-    }, 1200) // 1 second for fade + 200ms buffer
+    }, STATIC_DURATION) // Match the static duration used for video transitions
   }
 }
 
