@@ -23,11 +23,14 @@ const vibeConfigs: VibeConfigMap = {
     name: "Tokyo City Pop",
     videoPlaylist: [
       { id: 'SRGxH_CTwRM', startTime: 0, playDuration: 0 },
+      { id: '39GOyG2_luY', startTime: 0, playDuration: 8 },
       { id: 'JMNUd6qqVOM', startTime: 0, playDuration: 0 },
       { id: 'RQ-EE5m30BY', startTime: 0, playDuration: 0 },
       { id: 'HN1J87jPCxU', startTime: 208, playDuration: 0 },
-      { id: 'SAZJY-NnjbE', startTime: 83, playDuration: 14 },
-      { id: 'dQw4w9WgXcQ', startTime: 0, playDuration: 0 }
+      { id: 'SAZJY-NnjbE', startTime: 80, playDuration: 14 },
+      { id: 'xsex62QupRA', startTime: 9, playDuration: 27 },
+      { id: 'SRGxH_CTwRM', startTime: 500, playDuration: 26 },
+      { id: '_gkZ6jhytb8', startTime: 266, playDuration: 15 }
     ],
     playlistUrl: 'https://soundcloud.com/iannnnnnnnnn/sets/80s-japanese-city-pop-playlist'
   },
