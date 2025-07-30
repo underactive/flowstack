@@ -47,9 +47,28 @@ import { useVibeConfig } from '~/composables/useVibeConfig'
 
 const { getCurrentVideoPlaylist, currentVibe } = useVibeConfig()
 
-// Reactive video playlist that updates with vibe changes
+// Constants
+const DURATIONS = {
+  VIDEO: 15000, // 15 seconds
+  STATIC: 4000, // 4 seconds
+  POWER_OFF: 1500, // 1.5 seconds
+  STATIC_DELAY: 100 // Small delay to ensure static shows first
+}
+
+const VIDEO_EXTENSIONS = ['.mov', '.mp4', '.avi', '.mkv', '.webm', '.qt', '.wmv', '.m4v', '.mpeg']
+
+const FULLSCREEN_EVENTS = [
+  'fullscreenchange',
+  'webkitfullscreenchange', 
+  'mozfullscreenchange',
+  'MSFullscreenChange'
+]
+
+// State
 const videoPlaylist = computed(() => getCurrentVideoPlaylist())
 let player = null
+let cycleTimer = null
+
 const showStatic = ref(false)
 const isPoweredOn = ref(false)
 const showPowerOffStatic = ref(false)
@@ -58,47 +77,91 @@ const isPoweringOn = ref(false)
 const currentVideoIndex = ref(0)
 const currentVideoTitle = ref('Loading...')
 
-// Function to get a random video index
+// Utility functions
 const getRandomVideoIndex = () => {
   const playlist = videoPlaylist.value
   return playlist.length > 0 ? Math.floor(Math.random() * playlist.length) : 0
 }
 
-// Duration constants (in milliseconds)
-const VIDEO_DURATION = 15000 // 15 seconds
-const STATIC_DURATION = 4000 // 5 seconds
-
-// Video file extensions for fake filename
-const videoExtensions = ['.mov', '.mp4', '.avi', '.mkv', '.webm', '.qt', '.wmv', '.m4v', '.mpeg']
-
-// Computed property to create fake unix-style filename
-const fakeFilename = computed(() => {
-  // Return empty string when CRT is powered off
-  if (!isPoweredOn.value) {
-    return ''
+const getCurrentVideoDuration = () => {
+  const currentVideo = videoPlaylist.value[currentVideoIndex.value]
+  if (currentVideo?.playDuration > 0) {
+    const duration = currentVideo.playDuration * 1000
+    console.log(`Using custom playDuration: ${currentVideo.playDuration}s (${duration}ms) for video: ${currentVideo.id}`)
+    return duration
   }
-  
-  // Show "tuning in..." only when static is showing and CRT is powered on
-  if (showStatic.value) {
-    return 'tuning in...'
-  }
-  
-  // Take first 4 words, convert to lowercase, replace spaces with underscores
-  const words = currentVideoTitle.value
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
-    .split(/\s+/) // Split on whitespace
-    .filter(word => word.length > 0) // Remove empty strings
-    .slice(0, 4) // Take first 4 words
-    .join('_') // Join with underscores
-  
-  // Get random video extension
-  const randomExtension = videoExtensions[Math.floor(Math.random() * videoExtensions.length)]
-  
-  return `${words}${randomExtension}`
-})
+  console.log(`Using default VIDEO_DURATION: ${DURATIONS.VIDEO}ms for video: ${currentVideo?.id}`)
+  return DURATIONS.VIDEO
+}
 
-// Load YouTube IFrame API
+const logVideoInfo = (action, videoIndex, video) => {
+  const duration = video.playDuration > 0 ? `${video.playDuration}s` : 'default'
+  console.log(`${action}: Playing video ${videoIndex + 1}/${videoPlaylist.value.length}: ${video.id} (start: ${video.startTime}s, duration: ${duration})`)
+}
+
+const loadVideoWithStatic = (newIndex, action = 'Auto') => {
+  pauseVideoCycle()
+  showStatic.value = true
+  
+  setTimeout(() => {
+    currentVideoIndex.value = newIndex
+    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
+    
+    logVideoInfo(action, currentVideoIndex.value, currentVideo)
+    
+    if (player?.loadVideoById) {
+      player.loadVideoById({
+        videoId: currentVideo.id,
+        startSeconds: currentVideo.startTime
+      })
+    }
+    
+    setTimeout(() => {
+      showStatic.value = false
+      updateVideoTitle()
+      resumeVideoCycle()
+    }, DURATIONS.STATIC)
+  }, DURATIONS.STATIC_DELAY)
+}
+
+const cycleToNextVideo = () => {
+  const nextIndex = (currentVideoIndex.value + 1) % videoPlaylist.value.length
+  loadVideoWithStatic(nextIndex, 'Auto')
+}
+
+const nextVideo = () => {
+  const nextIndex = (currentVideoIndex.value + 1) % videoPlaylist.value.length
+  loadVideoWithStatic(nextIndex, 'Manual next')
+}
+
+const previousVideo = () => {
+  const prevIndex = currentVideoIndex.value === 0 
+    ? videoPlaylist.value.length - 1 
+    : currentVideoIndex.value - 1
+  loadVideoWithStatic(prevIndex, 'Manual previous')
+}
+
+// Timer management
+const startVideoCycle = () => {
+  const duration = getCurrentVideoDuration()
+  cycleTimer = setInterval(cycleToNextVideo, duration)
+}
+
+const pauseVideoCycle = () => {
+  if (cycleTimer) {
+    clearInterval(cycleTimer)
+    cycleTimer = null
+  }
+}
+
+const resumeVideoCycle = () => {
+  if (!cycleTimer) {
+    const duration = getCurrentVideoDuration()
+    cycleTimer = setInterval(cycleToNextVideo, duration)
+  }
+}
+
+// YouTube API management
 const loadYouTubeAPI = () => {
   return new Promise((resolve) => {
     if (window.YT) {
@@ -129,9 +192,9 @@ const initPlayer = async () => {
     width: '640',
     videoId: videoPlaylist.value[currentVideoIndex.value].id,
     playerVars: {
-      autoplay: 0, // Don't autoplay initially since CRT is off
+      autoplay: 0,
       mute: 1,
-      loop: 0, // Disable loop since we're manually cycling
+      loop: 0,
       controls: 0,
       modestbranding: 1,
       rel: 0,
@@ -145,12 +208,10 @@ const initPlayer = async () => {
       start: videoPlaylist.value[currentVideoIndex.value].startTime
     },
     events: {
-      onReady: (_event) => {
+      onReady: () => {
         console.log('YouTube player ready')
         // Hide overlays after player is ready
         hideYouTubeOverlays()
-        // Don't start video cycling or update title since CRT is off initially
-        // These will be handled when powerOn() is called
       },
       onStateChange: (event) => {
         // Handle player state changes
@@ -163,143 +224,7 @@ const initPlayer = async () => {
   })
 }
 
-// Start video cycling timer
-let cycleTimer = null
-
-// Function to get the current video's play duration
-const getCurrentVideoDuration = () => {
-  const currentVideo = videoPlaylist.value[currentVideoIndex.value]
-  if (currentVideo && currentVideo.playDuration > 0) {
-    const duration = currentVideo.playDuration * 1000 // Convert seconds to milliseconds
-    console.log(`Using custom playDuration: ${currentVideo.playDuration}s (${duration}ms) for video: ${currentVideo.id}`)
-    return duration
-  }
-  console.log(`Using default VIDEO_DURATION: ${VIDEO_DURATION}ms for video: ${currentVideo?.id}`)
-  return VIDEO_DURATION // Use default duration if playDuration is 0
-}
-
-const startVideoCycle = () => {
-  const duration = getCurrentVideoDuration()
-  cycleTimer = setInterval(() => {
-    cycleToNextVideo()
-  }, duration)
-}
-
-const pauseVideoCycle = () => {
-  if (cycleTimer) {
-    clearInterval(cycleTimer)
-    cycleTimer = null
-  }
-}
-
-const resumeVideoCycle = () => {
-  if (!cycleTimer) {
-    const duration = getCurrentVideoDuration()
-    cycleTimer = setInterval(() => {
-      cycleToNextVideo()
-    }, duration)
-  }
-}
-
-// Cycle to next video in playlist
-const cycleToNextVideo = () => {
-  // Pause the cycle timer during static overlay
-  pauseVideoCycle()
-  
-  // Show static overlay
-  showStatic.value = true
-  
-  // Wait for static to show, then load next video
-  setTimeout(() => {
-    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.value.length
-    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
-    
-    console.log(`Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
-    
-    if (player && player.loadVideoById) {
-      player.loadVideoById({
-        videoId: currentVideo.id,
-        startSeconds: currentVideo.startTime
-      })
-    }
-    
-    // Hide static after video loads and resume timer
-    setTimeout(() => {
-      showStatic.value = false
-      // Update video title immediately when static disappears
-      updateVideoTitle()
-      // Resume the cycle timer after static disappears with new video's duration
-      resumeVideoCycle()
-    }, STATIC_DURATION)
-  }, 100) // Small delay to ensure static shows first
-}
-
-// Manual navigation functions
-const nextVideo = () => {
-  // Pause auto-cycling temporarily
-  pauseVideoCycle()
-  
-  // Show static overlay
-  showStatic.value = true
-  
-  setTimeout(() => {
-    currentVideoIndex.value = (currentVideoIndex.value + 1) % videoPlaylist.value.length
-    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
-    
-    console.log(`Manual next: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
-    
-    if (player && player.loadVideoById) {
-      player.loadVideoById({
-        videoId: currentVideo.id,
-        startSeconds: currentVideo.startTime
-      })
-    }
-    
-    setTimeout(() => {
-      showStatic.value = false
-      // Update video title immediately when static disappears
-      updateVideoTitle()
-      // Resume auto-cycling with new video's duration
-      resumeVideoCycle()
-    }, STATIC_DURATION)
-  }, 100)
-}
-
-const previousVideo = () => {
-  // Pause auto-cycling temporarily
-  pauseVideoCycle()
-  
-  // Show static overlay
-  showStatic.value = true
-  
-  setTimeout(() => {
-    // Go to previous video with wrap-around (if at 0, go to last video)
-    currentVideoIndex.value = currentVideoIndex.value === 0 
-      ? videoPlaylist.value.length - 1 
-      : currentVideoIndex.value - 1
-    
-    const currentVideo = videoPlaylist.value[currentVideoIndex.value]
-    
-    console.log(`Manual previous: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
-    
-    if (player && player.loadVideoById) {
-      player.loadVideoById({
-        videoId: currentVideo.id,
-        startSeconds: currentVideo.startTime
-      })
-    }
-    
-    setTimeout(() => {
-      showStatic.value = false
-      // Update video title immediately when static disappears
-      updateVideoTitle()
-      // Resume auto-cycling with new video's duration
-      resumeVideoCycle()
-    }, STATIC_DURATION)
-  }, 100)
-}
-
-// Power on functionality (can be called externally)
+// Power management
 const powerOn = () => {
   if (!isPoweredOn.value) {
     // Powering on
@@ -340,7 +265,7 @@ const powerOn = () => {
         powerOffOverlay.style.opacity = '1'
         powerOffOverlay.style.transition = ''
       }
-    }, STATIC_DURATION) // Match the static duration used for video transitions
+    }, DURATIONS.STATIC)
   }
 }
 
@@ -364,65 +289,70 @@ const togglePower = () => {
     // Hide the static after animation completes
     setTimeout(() => {
       showPowerOffStatic.value = false
-    }, 1500) // 1.5 seconds for the power-down animation
+    }, DURATIONS.POWER_OFF)
   } else {
     // Powering on - use the same logic as powerOn()
     powerOn()
   }
 }
 
-// Fullscreen functionality
+// Fullscreen management
 const toggleFullscreen = () => {
   const videoContainer = document.querySelector('.video-container')
   
   if (!document.fullscreenElement) {
-    // Enter fullscreen
-    if (videoContainer.requestFullscreen) {
-      videoContainer.requestFullscreen()
-    } else if (videoContainer.webkitRequestFullscreen) {
-      videoContainer.webkitRequestFullscreen()
-    } else if (videoContainer.msRequestFullscreen) {
-      videoContainer.msRequestFullscreen()
+    const requestMethods = [
+      'requestFullscreen',
+      'webkitRequestFullscreen', 
+      'msRequestFullscreen'
+    ]
+    
+    for (const method of requestMethods) {
+      if (videoContainer[method]) {
+        videoContainer[method]()
+        break
+      }
     }
   } else {
-    // Exit fullscreen
-    if (document.exitFullscreen) {
-      document.exitFullscreen()
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen()
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen()
+    const exitMethods = [
+      'exitFullscreen',
+      'webkitExitFullscreen',
+      'msExitFullscreen'
+    ]
+    
+    for (const method of exitMethods) {
+      if (document[method]) {
+        document[method]()
+        break
+      }
     }
   }
 }
 
 // Handle fullscreen change events to resize player
 const handleFullscreenChange = () => {
-  if (player && player.getIframe) {
+  if (player?.getIframe) {
     setTimeout(() => {
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        // In fullscreen - resize to full viewport
-        player.getIframe().width = window.innerWidth
-        player.getIframe().height = window.innerHeight - 20 // Leave space for control bar
+      const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement
+      const iframe = player.getIframe()
+      
+      if (isFullscreen) {
+        iframe.width = window.innerWidth
+        iframe.height = window.innerHeight - 20
       } else {
-        // Exit fullscreen - restore original size
-        player.getIframe().width = 640
-        player.getIframe().height = 360
+        iframe.width = 640
+        iframe.height = 360
       }
     }, 100)
   }
 }
 
-// Function to update video title from YouTube API
+// Video title management
 const updateVideoTitle = () => {
-  if (player && player.getVideoData) {
+  if (player?.getVideoData) {
     try {
       const videoData = player.getVideoData()
-      if (videoData && videoData.title) {
-        currentVideoTitle.value = videoData.title
-      } else {
-        currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.value.length}`
-      }
+      currentVideoTitle.value = videoData?.title || `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.value.length}`
     } catch (error) {
       console.log('Unable to get video title:', error)
       currentVideoTitle.value = `Video ${currentVideoIndex.value + 1} of ${videoPlaylist.value.length}`
@@ -432,45 +362,11 @@ const updateVideoTitle = () => {
   }
 }
 
-// Watch for vibe changes and reload player
-watch(currentVibe, () => {
-  if (player) {
-    // Pause auto-cycling temporarily
-    pauseVideoCycle()
-    
-    // Show static overlay
-    showStatic.value = true
-    
-    setTimeout(() => {
-      // Start at a random video in the new playlist
-      currentVideoIndex.value = getRandomVideoIndex()
-      // Reload player with new video
-      const currentVideo = videoPlaylist.value[currentVideoIndex.value]
-      if (currentVideo && player.loadVideoById) {
-        console.log(`Vibe changed: Playing video ${currentVideoIndex.value + 1}/${videoPlaylist.value.length}: ${currentVideo.id} (start: ${currentVideo.startTime}s, duration: ${currentVideo.playDuration > 0 ? currentVideo.playDuration + 's' : 'default'})`)
-        player.loadVideoById({
-          videoId: currentVideo.id,
-          startSeconds: currentVideo.startTime
-        })
-      }
-      
-      // Hide static after video loads and resume timer
-      setTimeout(() => {
-        showStatic.value = false
-        // Update video title immediately when static disappears
-        updateVideoTitle()
-        // Resume the cycle timer after static disappears with new video's duration
-        resumeVideoCycle()
-      }, STATIC_DURATION)
-    }, 100) // Small delay to ensure static shows first
-  }
-})
-
-// Function to hide YouTube overlays
+// YouTube overlay management
 const hideYouTubeOverlays = () => {
   const hideOverlays = () => {
     const iframe = document.querySelector('#youtube-player iframe')
-    if (iframe && iframe.contentDocument) {
+    if (iframe?.contentDocument) {
       try {
         const elements = iframe.contentDocument.querySelectorAll('[class*="ytp-"]')
         elements.forEach(el => {
@@ -480,7 +376,6 @@ const hideYouTubeOverlays = () => {
           el.style.pointerEvents = 'none'
         })
       } catch {
-        // Cross-origin restrictions might prevent this
         console.log('Cannot access iframe content due to CORS')
       }
     }
@@ -493,41 +388,84 @@ const hideYouTubeOverlays = () => {
   // Also hide on mouse events
   const playerElement = document.querySelector('#youtube-player')
   if (playerElement) {
-    playerElement.addEventListener('mouseenter', hideOverlays)
-    playerElement.addEventListener('mouseover', hideOverlays)
-    playerElement.addEventListener('mousemove', hideOverlays)
+    ['mouseenter', 'mouseover', 'mousemove'].forEach(event => {
+      playerElement.addEventListener(event, hideOverlays)
+    })
   }
 }
 
+// Event listener management
+const addFullscreenListeners = () => {
+  FULLSCREEN_EVENTS.forEach(event => {
+    document.addEventListener(event, handleFullscreenChange)
+  })
+}
+
+const removeFullscreenListeners = () => {
+  FULLSCREEN_EVENTS.forEach(event => {
+    document.removeEventListener(event, handleFullscreenChange)
+  })
+}
+
+// Computed properties
+const fakeFilename = computed(() => {
+  if (!isPoweredOn.value) return ''
+  if (showStatic.value) return 'tuning in...'
+  
+  const words = currentVideoTitle.value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(word => word.length > 0)
+    .slice(0, 4)
+    .join('_')
+  
+  const randomExtension = VIDEO_EXTENSIONS[Math.floor(Math.random() * VIDEO_EXTENSIONS.length)]
+  return `${words}${randomExtension}`
+})
+
+// Watchers
+watch(currentVibe, () => {
+  if (player) {
+    pauseVideoCycle()
+    showStatic.value = true
+    
+    setTimeout(() => {
+      currentVideoIndex.value = getRandomVideoIndex()
+      const currentVideo = videoPlaylist.value[currentVideoIndex.value]
+      
+      if (currentVideo && player.loadVideoById) {
+        logVideoInfo('Vibe changed', currentVideoIndex.value, currentVideo)
+        player.loadVideoById({
+          videoId: currentVideo.id,
+          startSeconds: currentVideo.startTime
+        })
+      }
+      
+      setTimeout(() => {
+        showStatic.value = false
+        updateVideoTitle()
+        resumeVideoCycle()
+      }, DURATIONS.STATIC)
+    }, DURATIONS.STATIC_DELAY)
+  }
+})
+
+// Lifecycle
 onMounted(() => {
   initPlayer()
-  
-  // Don't hide initial static overlay since CRT is off initially
-  // It will be hidden when powerOn() is called
-  
-  // Add fullscreen change listeners
-  document.addEventListener('fullscreenchange', handleFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
-  document.addEventListener('mozfullscreenchange', handleFullscreenChange)
-  document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+  addFullscreenListeners()
 })
 
 onUnmounted(() => {
-  if (player && player.destroy) {
+  if (player?.destroy) {
     player.destroy()
   }
-  
-  // Remove fullscreen change listeners
-  document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
-  document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
-  document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+  removeFullscreenListeners()
 })
 
-// Expose methods for parent components
-defineExpose({
-  powerOn
-})
+// Expose methods
+defineExpose({ powerOn })
 </script>
 
 <style scoped>
@@ -583,7 +521,7 @@ defineExpose({
   }
 }
 
-/* Hide YouTube overlay elements - Global approach */
+/* YouTube overlay hiding - consolidated rules */
 :global(.ytp-watermark),
 :global(.ytp-show-cards-title),
 :global(.ytp-pause-overlay),
@@ -602,10 +540,15 @@ defineExpose({
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+  transform: scale(0) !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
-/* Static overlay to hide YouTube initial overlay */
-.tv-static {
+/* Static overlays */
+.tv-static,
+.power-on-static {
   position: absolute;
   top: 0;
   left: 0;
@@ -616,16 +559,18 @@ defineExpose({
   animation: back 5s linear infinite;
 }
 
-@keyframes back {
-    from {
-    background-size: 100% 100%;
-  }
-  to {
-    background-size: 200% 200%;
-  }
+.power-on-static {
+  z-index: 1400;
+  border-radius: 12px;
+  pointer-events: none;
 }
 
-/* Power off overlay */
+@keyframes back {
+  from { background-size: 100% 100%; }
+  to { background-size: 200% 200%; }
+}
+
+/* Power overlays */
 .power-off-overlay {
   position: absolute;
   top: 0;
@@ -638,7 +583,6 @@ defineExpose({
   pointer-events: none;
 }
 
-/* Power off static animation */
 .power-off-static {
   position: absolute;
   top: 0;
@@ -653,43 +597,13 @@ defineExpose({
 }
 
 @keyframes powerOffShrink {
-  0% {
-    height: 100%;
-    opacity: 1;
-    top: 0;
-  }
-  50% {
-    height: 100%;
-    opacity: 0.8;
-    top: 0;
-  }
-  90% {
-    height: 2px;
-    opacity: 0.6;
-    top: calc(50% - 1px);
-  }
-  100% {
-    height: 0px;
-    opacity: 0;
-    top: 50%;
-  }
+  0% { height: 100%; opacity: 1; top: 0; }
+  50% { height: 100%; opacity: 0.8; top: 0; }
+  90% { height: 2px; opacity: 0.6; top: calc(50% - 1px); }
+  100% { height: 0px; opacity: 0; top: 50%; }
 }
 
-/* Power on static overlay */
-.power-on-static {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1400;
-  background-image: repeating-radial-gradient(circle at 17% 32%, white, black 0.00085px);
-  border-radius: 12px;
-  pointer-events: none;
-  animation: back 5s linear infinite;
-}
-
-/* CRT overlay with interlaced scan lines */
+/* CRT overlay */
 .crt-overlay {
   position: absolute;
   top: 0;
@@ -698,14 +612,13 @@ defineExpose({
   height: 100%;
   z-index: 2000;
   pointer-events: none;
-  background: 
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1px,
-      rgba(0, 0, 0, 0.4) 1px,
-      rgba(0, 0, 0, 0.4) 2px
-    );
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0, 0, 0, 0.4) 1px,
+    rgba(0, 0, 0, 0.4) 2px
+  );
   border-radius: 12px;
   overflow: hidden;
 }
@@ -717,13 +630,12 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  background: 
-    radial-gradient(
-      ellipse at center,
-      transparent 0%,
-      transparent 80%,
-      rgba(0, 0, 0, 0.1) 100%
-    );
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 80%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
   animation: crtFlicker 0.15s infinite linear;
 }
 
@@ -734,13 +646,12 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  background: 
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.02) 50%,
-      transparent 100%
-    );
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 100%
+  );
   animation: crtScan 2s infinite linear;
 }
 
@@ -756,21 +667,13 @@ defineExpose({
   100% { transform: translateX(100%); }
 }
 
-/* Additional global rules for iframe content */
-:global(iframe[src*="youtube"]) {
-  pointer-events: none;
-}
-
-:global(iframe[src*="youtube"] * ) {
-  pointer-events: none !important;
-}
-
-/* Target YouTube iframe specifically */
+/* Iframe and pointer events */
+:global(iframe[src*="youtube"]),
+:global(iframe[src*="youtube"] *),
 .youtube-player iframe {
   pointer-events: none;
 }
 
-/* Force hide on hover */
 .youtube-player:hover :global([class*="ytp-"]) {
   display: none !important;
   opacity: 0 !important;
@@ -778,39 +681,14 @@ defineExpose({
   pointer-events: none !important;
 }
 
-/* Additional aggressive hiding */
-:global(.ytp-watermark),
-:global(.ytp-show-cards-title),
-:global(.ytp-pause-overlay),
-:global(.ytp-gradient-top),
-:global(.ytp-gradient-bottom),
-:global(.ytp-chrome-top),
-:global(.ytp-chrome-bottom),
-:global(.ytp-large-play-button),
-:global(.ytp-button),
-:global(.ytp-title),
-:global(.ytp-youtube-button),
-:global(.ytp-fullscreen-button),
-:global(.ytp-cued-thumbnail-overlay) {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transform: scale(0) !important;
-  width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
-}
-
-/* Control Bar Styles */
+/* Control Bar */
 .control-bar {
   display: flex;
   align-items: center;
   width: 640px;
   max-width: 100%;
   height: 16px;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding: 0 6px;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
   border-radius: 0 0 6px 6px;
@@ -879,60 +757,18 @@ defineExpose({
   letter-spacing: 0.5px;
 }
 
-/* Responsive adjustments for control bar */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .control-bar {
-    width: 100%;
-  }
-  
-  .info-display {
-    font-size: 7px;
-  }
+  .control-bar { width: 100%; }
+  .info-display { font-size: 7px; }
 }
 
 @media (max-width: 480px) {
-  .info-display {
-    font-size: 6px;
-  }
+  .info-display { font-size: 6px; }
 }
 
-/* Fullscreen styles */
-.video-container:fullscreen {
-  width: 100vw !important;
-  height: 100vh !important;
-  background: black;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  margin: 0;
-}
-
-.video-container:fullscreen .player-wrapper {
-  width: 100vw !important;
-  height: calc(100vh - 20px) !important; /* Leave space for control bar */
-  max-width: none !important;
-  max-height: none !important;
-}
-
-.video-container:fullscreen .youtube-player {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.video-container:fullscreen .control-bar {
-  width: 100vw !important;
-  height: 20px !important;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  z-index: 10000;
-  background: rgba(0, 0, 0, 0.9);
-  border-radius: 0;
-}
-
-/* Webkit fullscreen support */
+/* Fullscreen styles - consolidated */
+.video-container:fullscreen,
 .video-container:-webkit-full-screen {
   width: 100vw !important;
   height: 100vh !important;
@@ -945,6 +781,7 @@ defineExpose({
   margin: 0;
 }
 
+.video-container:fullscreen .player-wrapper,
 .video-container:-webkit-full-screen .player-wrapper {
   width: 100vw !important;
   height: calc(100vh - 20px) !important;
@@ -952,11 +789,13 @@ defineExpose({
   max-height: none !important;
 }
 
+.video-container:fullscreen .youtube-player,
 .video-container:-webkit-full-screen .youtube-player {
   width: 100% !important;
   height: 100% !important;
 }
 
+.video-container:fullscreen .control-bar,
 .video-container:-webkit-full-screen .control-bar {
   width: 100vw !important;
   height: 20px !important;
