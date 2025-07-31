@@ -105,7 +105,7 @@ onMounted(() => {
   
   // Open home window by default using windowSizes configuration
   const homeWindowOptions = windowSizes['/']
-  openWindow('/', 'Welcome to DXOS', homeWindowOptions)
+  openWindow('/', 'FlowStack', homeWindowOptions)
 })
 
 function updateTime() {
@@ -126,7 +126,7 @@ const dockItems = [
 ]
 
 const windowTitles = {
-  '/': 'Welcome to DXOS',
+  '/': 'FlowStack',
   '/about': 'About DXOS',
   '/contact': 'Contact Us',
   '/projects': 'Projects',
