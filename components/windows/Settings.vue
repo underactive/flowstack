@@ -2,7 +2,7 @@
   <div class="settings-page">
     <div class="settings-container">
       <h1>Settings</h1>
-      <p class="subtitle">Customize your DXOS experience</p>
+      <p class="subtitle">Customize your AMFM.radio experience</p>
       
       <div class="settings-content">
         <div class="settings-section">

@@ -9,7 +9,7 @@
           </svg>
         </div>
         <div class="menu-items">
-          <span class="menu-item">Nuxt</span>
+          <span class="menu-item">AMFM.radio</span>
           <span class="menu-item">File</span>
           <span class="menu-item">Edit</span>
           <span class="menu-item">View</span>
@@ -105,7 +105,7 @@ onMounted(() => {
   
   // Open home window by default using windowSizes configuration
   const homeWindowOptions = windowSizes['/']
-  openWindow('/', 'FlowStack', homeWindowOptions)
+  openWindow('/', 'Media Player', homeWindowOptions)
 })
 
 function updateTime() {
@@ -126,8 +126,8 @@ const dockItems = [
 ]
 
 const windowTitles = {
-  '/': 'FlowStack',
-  '/about': 'About DXOS',
+  '/': 'Media Player',
+  '/about': 'About AMFM.radio',
   '/contact': 'Contact Us',
   '/projects': 'Projects',
   '/settings': 'Settings'
