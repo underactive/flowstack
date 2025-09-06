@@ -1,7 +1,7 @@
 <template>
   <div class="about-page">
     <div class="about-card">
-      <h1>About AMFM.radio</h1>
+      <h1>About AMFM.video</h1>
       <p class="subtitle">A modern web application with a macOS-inspired interface</p>
       
       <div class="content-section">

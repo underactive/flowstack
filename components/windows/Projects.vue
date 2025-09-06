@@ -33,7 +33,7 @@
 <script setup>
 const projects = [
   {
-    title: 'AMFM.radio Desktop',
+    title: 'AMFM.video Desktop',
     description: 'A macOS-inspired web desktop interface built with Nuxt 3 and Vue 3.',
     icon: 'i-heroicons-computer-desktop',
     tags: ['Nuxt 3', 'Vue 3', 'TypeScript', 'Tailwind']

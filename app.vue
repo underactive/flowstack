@@ -9,7 +9,7 @@
           </svg>
         </div>
         <div class="menu-items">
-          <span class="menu-item">AMFM.radio</span>
+          <span class="menu-item">AMFM.video</span>
           <span class="menu-item">File</span>
           <span class="menu-item">Edit</span>
           <span class="menu-item">View</span>
@@ -127,7 +127,7 @@ const dockItems = [
 
 const windowTitles = {
   '/': 'Media Player',
-  '/about': 'About AMFM.radio',
+  '/about': 'About AMFM.video',
   '/contact': 'Contact Us',
   '/projects': 'Projects',
   '/settings': 'Settings'
